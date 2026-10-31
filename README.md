@@ -14,6 +14,8 @@ npm run dev
 npm run typecheck
 npm test
 npm run build
+npx playwright install --with-deps chromium
+npm run test:e2e
 ```
 
 ### GitHub Pages
@@ -29,4 +31,8 @@ This repository uses a GitHub Actions Pages workflow from `main`, publishing Vit
 5. **Governance & Supporting Modules** — delivered: recommendations/decision journal, versioned local review policies, planning-only acknowledgements, source freshness checks, privacy and browser data controls, JSON/CSV reports, planned integration catalog and local display settings.
 6. Cross-screen certification, responsive polish and final frontend release.
 
-See `docs/PHASE_1.md` through `docs/PHASE_5.md` for scope and acceptance criteria.
+See `docs/PHASE_1.md` through `docs/PHASE_6.md` for scope and acceptance criteria.
+
+### Certification boundary
+
+The v0.6 workflow gates GitHub Pages on unit tests, strict TypeScript, production build and Chromium end-to-end testing. This certifies a **fictional browser-local demonstration only**, not production finance, security or accessibility compliance. See `docs/PHASE_6.md` for coverage, limitations and release requirements.

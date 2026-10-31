@@ -33,13 +33,14 @@ import {ReportsScreen} from './phase5/Reports';
 import {IntegrationsScreen} from './phase5/Integrations';
 import {SettingsScreen} from './phase5/Settings';
 import './phase5/styles.css';
+import './phase6/styles.css';
 
 const iconSet={
  dashboard:LayoutDashboard,networth:TrendingUp,capital:WalletCards,portfolio:BriefcaseBusiness,
  goals:Target,risk:TriangleAlert,opportunity:Sparkles,forecasts:ChartNoAxesCombined,
  independence:Landmark,advisor:BrainCircuit,decisions:NotebookText,governance:ShieldCheck,income:Landmark,liabilities:WalletCards,strategies:BriefcaseBusiness,performance:ChartNoAxesCombined,scenarios:Sparkles,security:LockKeyhole,reports:NotebookText,integrations:BriefcaseBusiness,settings:ChartNoAxesCombined
 };
-const dateLabel='31 Oct 2026';
+const dateLabel='31 Oct 2026 · fictional sample';
 const routes=menu.map(x=>x.slug);
 function initialRoute():Route{
  const hash=window.location.hash.replace(/^#\/?/,'');
@@ -140,7 +141,7 @@ function Dashboard({navigate}:{navigate:(r:Route)=>void}){
  <div className="row-two"><Trend period={period} setPeriod={setPeriod}/><Composition onRisk={()=>navigate('risk')}/></div>
  <div className="row-three"><Goals navigate={navigate}/><Capital navigate={navigate}/><DecisionDesk open={()=>navigate('decisions')}/></div>
  <div className="row-bottom"><OpportunityRadar open={()=>navigate('opportunities')}/><RiskWatch open={()=>navigate('risk')}/></div>
- <footer className="dashboard-foot">Wealth OS Phase 5 · Local governance and wealth-reporting prototype · All figures and insights are illustrative. No bank, Personal Kernel or AI service is connected.</footer>
+ <footer className="dashboard-foot">Wealth OS v0.6 · Frontend release candidate · Sample financial data only · All figures and insights are illustrative. No bank, Personal Kernel or AI service is connected.</footer>
  </>
 }
 function FutureScreen({route,navigate}:{route:Route,navigate:(r:Route)=>void}){
@@ -159,13 +160,14 @@ function AppShell(){
  const [noticesOpen,setNoticesOpen]=useState(false);
  const [profileOpen,setProfileOpen]=useState(false);
  const searchRef=useRef<HTMLInputElement>(null);
- function navigate(r:Route){window.location.hash=r;setRoute(r);setMobileOpen(false);setSearchOpen(false);setSearch('');setNoticesOpen(false);setProfileOpen(false);window.scrollTo({top:0,behavior:'auto'})}
+ function navigate(r:Route){window.location.hash=r;setRoute(r);setMobileOpen(false);setSearchOpen(false);setSearch('');setNoticesOpen(false);setProfileOpen(false);window.scrollTo({top:0,behavior:'auto'});window.requestAnimationFrame(()=>document.getElementById('main-content')?.focus())}
  useEffect(()=>{const change=()=>setRoute(window.location.hash?initialRoute():state.governance.settings.defaultScreen);window.addEventListener('hashchange',change);const key=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();searchRef.current?.focus();setSearchOpen(true)} if(e.key==='Escape'){setSearchOpen(false);setNoticesOpen(false);setProfileOpen(false);setMobileOpen(false)}};window.addEventListener('keydown',key);return()=>{window.removeEventListener('hashchange',change);window.removeEventListener('keydown',key)}},[state.governance.settings.defaultScreen]);
  const results=menu.filter(x=>x.label.toLowerCase().includes(search.toLowerCase())).slice(0,8);
  const current=menu.find(x=>x.slug===route)!;
- return <div className="app">
+ useEffect(()=>{document.title=current.label+' · Wealth OS (sample)'},[current.label]);
+ return <div className="app"><a className="p6-skip" href="#main-content">Skip to main content</a>
  {mobileOpen&&<button type="button" className="mobile-backdrop" aria-label="Close navigation" onClick={()=>setMobileOpen(false)}/>}
- <aside className={'sidebar '+(mobileOpen?'open':'')} aria-label="Wealth OS navigation">
+ <aside id="wealth-navigation" className={'sidebar '+(mobileOpen?'open':'')} aria-label="Wealth OS navigation">
  <div className="brand"><span className="brandmark">◇</span><span className="brand-text">wealth<span>os</span><small>PERSONAL KERNEL</small></span></div>
  {(['WORKSPACE','INTELLIGENCE'] as const).map(group=><div key={group}><div className="nav-title">{group}</div><nav aria-label={group.toLowerCase()}>{menu.filter(x=>x.group===group).map(item=>{const Icon=iconSet[item.icon];return <button type="button" key={item.slug} className={'nav-item '+(route===item.slug?'active':'')} onClick={()=>navigate(item.slug)} aria-current={route===item.slug?'page':undefined}><Icon size={17} strokeWidth={1.85}/><span>{item.label}</span>{item.phase>5&&<span className="nav-phase">·</span>}</button>})}</nav></div>)}
  <div className="sidebar-grow"/>
@@ -173,11 +175,11 @@ function AppShell(){
  <div className="side-account"><span className="avatar">WO</span><div><b>Personal Wealth</b><small>Sample workspace</small></div><ChevronDown size={14}/></div>
  </aside>
  <div className="page">
- <header className="topbar"><button type="button" className="mobile-trigger" onClick={()=>setMobileOpen(true)} aria-label="Open navigation"><MenuIcon size={20}/></button>
+ <header className="topbar"><button type="button" className="mobile-trigger" onClick={()=>setMobileOpen(true)} aria-label="Open navigation" aria-expanded={mobileOpen} aria-controls="wealth-navigation"><MenuIcon size={20}/></button>
  <div className="search-shell"><Search size={16}/><input ref={searchRef} type="search" aria-label="Search Wealth OS modules" value={search} onFocus={()=>setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} placeholder="Search wealth, goals, decisions..."/><span className="shortcut">⌘ K</span>{searchOpen&&<div className="search-results">{results.length?results.map(item=><button key={item.slug} type="button" onClick={()=>navigate(item.slug)}>{item.label}<span>{item.phase<=5?'Open screen':'Phase '+item.phase}</span></button>):<p>No matching Wealth OS modules</p>}</div>}</div>
- <div className="top-actions"><div className="popover-anchor"><button type="button" className="icon-btn notification" aria-label="Show notifications" aria-expanded={noticesOpen} onClick={()=>{setNoticesOpen(v=>!v);setProfileOpen(false)}}><Bell size={18}/><i/></button>{noticesOpen&&<div className="popover"><b>Preview notifications</b><p><Clock3 size={15}/> Wealth OS Phase 5 is ready to explore.</p><p><Info size={15}/> No live financial alerts are connected.</p></div>}</div><div className="top-divider"/><button type="button" className="connection" onClick={()=>navigate('governance')}><i/> Preview mode <ChevronDown size={13}/></button><div className="popover-anchor"><button type="button" className="avatar top-avatar" aria-label="Open local demo workspace menu" onClick={()=>{setProfileOpen(v=>!v);setNoticesOpen(false)}}>WO</button>{profileOpen&&<div className="popover account-popover"><b>Personal Wealth</b><p>Sample workspace · no sign-in</p><button type="button" onClick={()=>navigate('governance')}>View governance roadmap <ArrowRight size={13}/></button></div>}</div></div>
+ <div className="top-actions"><div className="popover-anchor"><button type="button" className="icon-btn notification" aria-label="Show notifications" aria-expanded={noticesOpen} onClick={()=>{setNoticesOpen(v=>!v);setProfileOpen(false)}}><Bell size={18}/><i/></button>{noticesOpen&&<div className="popover"><b>Preview notifications</b><p><Clock3 size={15}/> Wealth OS v0.6 frontend release candidate is ready to explore.</p><p><Info size={15}/> No live financial alerts are connected.</p></div>}</div><div className="top-divider"/><button type="button" className="connection" onClick={()=>navigate('governance')}><i/> Preview mode <ChevronDown size={13}/></button><div className="popover-anchor"><button type="button" className="avatar top-avatar" aria-label="Open local demo workspace menu" onClick={()=>{setProfileOpen(v=>!v);setNoticesOpen(false)}}>WO</button>{profileOpen&&<div className="popover account-popover"><b>Personal Wealth</b><p>Sample workspace · no sign-in</p><button type="button" onClick={()=>navigate('governance')}>View governance roadmap <ArrowRight size={13}/></button></div>}</div></div>
  </header>
- <main className="content" onClick={()=>{if(searchOpen)setSearchOpen(false)}}>{route==='dashboard'?<Dashboard navigate={navigate}/>:['net-worth','capital','portfolio','income','liabilities'].includes(route)?<Phase2Screen route={route as 'net-worth'|'capital'|'portfolio'|'income'|'liabilities'}/>:route==='goals'?<GoalsScreen navigate={navigate}/>:route==='strategies'?<StrategiesScreen navigate={navigate}/>:route==='independence'?<IndependenceScreen navigate={navigate}/>:route==='performance'?<PerformanceScreen navigate={navigate}/>:route==='risk'?<RiskScreen navigate={navigate}/>:route==='opportunities'?<OpportunitiesScreen navigate={navigate}/>:route==='forecasts'?<ForecastScreen navigate={navigate}/>:route==='scenarios'?<ScenarioScreen navigate={navigate}/>:route==='advisor'?<AdvisorScreen navigate={navigate}/>:route==='decisions'?<DecisionsScreen navigate={navigate}/>:route==='governance'?<GovernanceScreen navigate={navigate}/>:route==='security'?<SecurityScreen navigate={navigate}/>:route==='reports'?<ReportsScreen navigate={navigate}/>:route==='integrations'?<IntegrationsScreen navigate={navigate}/>:route==='settings'?<SettingsScreen navigate={navigate}/>:<FutureScreen route={current.slug} navigate={navigate}/>}</main>
+ <main id="main-content" tabIndex={-1} aria-label={current.label} className="content" onClick={()=>{if(searchOpen)setSearchOpen(false)}}>{route==='dashboard'?<Dashboard navigate={navigate}/>:['net-worth','capital','portfolio','income','liabilities'].includes(route)?<Phase2Screen route={route as 'net-worth'|'capital'|'portfolio'|'income'|'liabilities'}/>:route==='goals'?<GoalsScreen navigate={navigate}/>:route==='strategies'?<StrategiesScreen navigate={navigate}/>:route==='independence'?<IndependenceScreen navigate={navigate}/>:route==='performance'?<PerformanceScreen navigate={navigate}/>:route==='risk'?<RiskScreen navigate={navigate}/>:route==='opportunities'?<OpportunitiesScreen navigate={navigate}/>:route==='forecasts'?<ForecastScreen navigate={navigate}/>:route==='scenarios'?<ScenarioScreen navigate={navigate}/>:route==='advisor'?<AdvisorScreen navigate={navigate}/>:route==='decisions'?<DecisionsScreen navigate={navigate}/>:route==='governance'?<GovernanceScreen navigate={navigate}/>:route==='security'?<SecurityScreen navigate={navigate}/>:route==='reports'?<ReportsScreen navigate={navigate}/>:route==='integrations'?<IntegrationsScreen navigate={navigate}/>:route==='settings'?<SettingsScreen navigate={navigate}/>:<FutureScreen route={current.slug} navigate={navigate}/>}</main>
  </div>
  {notice&&<div className="wos-toast" role="status"><Check size={16}/>{notice}<button className="wos-toast-close" aria-label="Dismiss notice" type="button" onClick={()=>notify('')}><X size={15}/></button></div>}
  </div>

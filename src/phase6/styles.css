@@ -1,0 +1,27 @@
+/* Phase 6 release accessibility & viewport hardening. */
+.p6-skip{position:fixed;left:16px;top:-64px;padding:12px 18px;border-radius:9px;background:#2b275e;color:#fff;z-index:2000;font-weight:800;text-decoration:none;box-shadow:0 8px 20px #20195644}
+.p6-skip:focus-visible{top:12px}
+#main-content:focus{outline:none}
+#main-content:focus-visible{outline:3px solid #7766eb;outline-offset:-3px}
+.p6-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.wos-modal:focus{outline:0}
+.wos-modal:focus-visible{outline:3px solid #8171e9}
+.wos-scrim{z-index:1200}
+.wos-modal{max-height:min(90dvh,900px);overflow-y:auto;overscroll-behavior:contain}
+.wos-field input:focus-visible,.wos-field select:focus-visible,.wos-field textarea:focus-visible{outline:3px solid #b8aff9;outline-offset:1px}
+.wos-card,.wos-kpi,.wos-screen{min-width:0}
+.wos-card-head>*{min-width:0}
+.wos-table-scroll{max-width:100%;overflow-x:auto}
+.wos-page-head h1,.wos-card h2{overflow-wrap:anywhere}
+.p5-storage-list>div{min-width:0}
+@media(max-width:700px){
+ .wos-page-head{gap:10px}
+ .wos-page-head .wos-head-actions{flex-wrap:wrap}
+ .p5-split,.p4-risk-layout,.p4-advisor-layout,.p4-opp-layout,.p4-scenario-layout,.p3-goals-layout,.p3-strategy-layout{min-width:0}
+ .p5-recommendation{overflow-wrap:anywhere}
+ .p5-report-banner{overflow-wrap:anywhere}
+ .wos-modal{max-width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}

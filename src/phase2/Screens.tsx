@@ -1,8 +1,9 @@
 import {useMemo,useState} from 'react';
 import type {FormEvent,ReactNode} from 'react';
 import {Area,AreaChart,Bar,BarChart,CartesianGrid,ResponsiveContainer,Tooltip,XAxis,YAxis,Cell} from 'recharts';
-import {ArrowDownRight,ArrowLeftRight,ArrowRight,BriefcaseBusiness,CheckCircle2,ChevronRight,CircleDollarSign,Coins,Info,Landmark,Layers3,Plus,RotateCcw,Search,ShieldCheck,TrendingUp,WalletCards,X} from 'lucide-react';
+import {ArrowDownRight,ArrowLeftRight,ArrowRight,BriefcaseBusiness,CheckCircle2,ChevronRight,CircleDollarSign,Coins,Info,Landmark,Layers3,Plus,RotateCcw,Search,ShieldCheck,TrendingUp,WalletCards} from 'lucide-react';
 import {useWealth} from './context';
+import {AccessibleDialog} from '../phase6/AccessibleDialog';
 import {categories,available,commitAllocation,moveCapital,positionValue,revalue,addManualPosition,addStream,addDebt,removeStream,repay,DEMO_DATE} from './model';
 import type {Category,Position,IncomeKind,Source} from './model';
 
@@ -27,7 +28,9 @@ function Kpi({label,value,hint,icon,tone='violet'}:{label:string,value:string,hi
 }
 function Warning({children}:{children:ReactNode}){return <div className="wos-advisory"><Info size={16}/><div>{children}</div></div>}
 function Progress({value,color='#7466ef'}:{value:number,color?:string}){return <div className="wos-progress"><span style={{width:Math.min(100,Math.max(0,value))+'%',background:color}}/></div>}
-function Modal({title,sub,children,onClose}:{title:string,sub:string,children:ReactNode,onClose:()=>void}){return <div className="wos-scrim" onMouseDown={e=>{if(e.currentTarget===e.target)onClose()}}><div className="wos-modal" role="dialog" aria-modal="true" aria-label={title}><div className="wos-modal-top"><div><small>WEALTH OS · PHASE 2</small><h2>{title}</h2><p>{sub}</p></div><button type="button" onClick={onClose} aria-label="Close form" className="wos-close"><X size={19}/></button></div>{children}</div></div>}
+function Modal({title,sub,children,onClose}:{title:string,sub:string,children:ReactNode,onClose:()=>void}){
+ return <AccessibleDialog title={title} description={sub} onClose={onClose}>{children}</AccessibleDialog>;
+}
 function Field({label,children}:{label:string,children:ReactNode}){return <label className="wos-field"><span>{label}</span>{children}</label>}
 function FormError({error}:{error:string}){return error?<p className="wos-error" role="alert">{error}</p>:null}
 function DateTag(){return <span className="wos-live-tag"><span/> Local demonstration · not connected</span>}

@@ -1,3 +1,4 @@
+import {isValidCoreState,hasValidExtensions} from '../phase6/validation';
 import {seedGovernance,hydrateGovernance} from '../phase5/model';
 import type {GovernanceState} from '../phase5/model';
 import {seedIntelligence,isIntelligenceState} from '../phase4/model';
@@ -149,7 +150,7 @@ export function financialSnapshot(s:WealthState,at:string=new Date().toISOString
  return {at,assets:t.assets,liabilities:t.liabilities,netWorth:t.netWorth,income:t.monthlyIncome,groups:{...t.groups}};
 }
 export function hydrateState(raw:unknown):WealthState{
- if(!isValidState(raw))return structuredClone(initialState);
+ if(!isValidCoreState(raw)||!hasValidExtensions(raw))return structuredClone(initialState);
  const candidate=raw as WealthState;
  const planning=isPlanningState(candidate.planning)?candidate.planning:structuredClone(seedPlanning);
  const intelligence=isIntelligenceState(candidate.intelligence)?candidate.intelligence:structuredClone(seedIntelligence);

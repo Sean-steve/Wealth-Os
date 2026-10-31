@@ -29,8 +29,35 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
-  deploy:
+  browser-certification:
+    name: Frontend browser certification
     needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Desktop, mobile, keyboard and cross-module journeys
+        run: npm run test:e2e
+        env:
+          CI: 'true'
+      - name: Retain failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wealth-os-browser-certification
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+  deploy:
+    needs: [build, browser-certification]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

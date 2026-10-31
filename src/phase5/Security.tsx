@@ -1,4 +1,5 @@
-import {useState} from 'react';
+import {makeWorkspaceBackup,readWorkspaceBackup} from '../phase6/backup';
+import {useRef,useState} from 'react';
 import {Archive,ArrowRight,Database,Download,Eye,EyeOff,FileJson,HardDriveDownload,LockKeyhole,RefreshCw,ShieldAlert,ShieldCheck,Trash2,UserRoundX} from 'lucide-react';
 import {useWealth} from '../phase2/context';
 import {updatePrivacy} from './model';
@@ -7,12 +8,25 @@ import {saveLocalFile,sampleDateStamp} from './download';
 import {Alert,Badge,Button,Card,Header,Sample,Stat,cash} from '../phase3/ui';
 const key='wealth-os-demo-advisor-session';
 export function SecurityScreen({navigate}:{navigate:(r:'governance'|'integrations'|'reports')=>void}){
- const {state,metrics,update,reset,notify}=useWealth();
+ const {state,metrics,update,replace,reset,notify}=useWealth();
+ const fileInput=useRef<HTMLInputElement>(null);
  const [storageError,setStorageError]=useState('');
  const p=state.governance.privacy;
  const stateText=p.showSensitiveDemoValues?cash(metrics.netWorth):'Hidden in this privacy preview';
  function change(name:keyof PrivacyPrefs,value:boolean){update(s=>updatePrivacy(s,{...s.governance.privacy,[name]:value}));notify('Local privacy preference updated. No external settings were changed.')}
- function exportDemo(){try{saveLocalFile('wealth-os-local-sample-'+sampleDateStamp()+'.json',JSON.stringify({format:'wealth-os-local-demo',exportedAt:new Date().toISOString(),notice:'Entirely fictional browser-local prototype workspace. Not authenticated, encrypted or verified.',workspace:state},null,2));notify('Demo workspace exported to a local JSON file. Treat exported files as readable plain text.')}catch(e){setStorageError(e instanceof Error?e.message:'Export failed.')}}
+ function exportDemo(){try{saveLocalFile('wealth-os-local-sample-'+sampleDateStamp()+'.json',makeWorkspaceBackup(state));notify('Demo workspace exported to a local JSON file. Treat exported files as readable plain text.')}catch(e){setStorageError(e instanceof Error?e.message:'Export failed.')}}
+ async function importDemo(file:File|undefined){
+  if(!file)return;
+  setStorageError('');
+  try{
+   if(file.size>3*1024*1024)throw Error('Backup is too large. Maximum size: 3 MB.');
+   const workspace=readWorkspaceBackup(await file.text());
+   if(!window.confirm('Replace all current edited sample data with this backup? This cannot be undone.'))return;
+   replace(workspace);
+   notify('Local sample backup restored. No external accounts were accessed.');
+  }catch(e){setStorageError(e instanceof Error?e.message:'Unable to restore this backup. No local data was changed.')}
+  finally{if(fileInput.current)fileInput.current.value=''}
+ }
  function deleteDemo(){if(!window.confirm('Reset ALL locally edited sample holdings, goals, intelligence and decisions back to their fictional defaults? This cannot be undone.'))return;try{localStorage.removeItem(key)}catch{/* Browser storage may be blocked */}reset();notify('Reset complete. The default fictional workspace will remain in browser storage until the browser is cleared.')}
  function clearAdvisor(){try{localStorage.removeItem(key);notify('Saved browser-local advisor transcript cleared. Existing open tabs may still display an in-memory copy.')}catch(e){setStorageError(e instanceof Error?e.message:'Unable to clear local transcript.')}}
  return <div className="wos-screen">
@@ -36,10 +50,13 @@ export function SecurityScreen({navigate}:{navigate:(r:'governance'|'integration
  <div className="p5-privacy-preview">{p.showSensitiveDemoValues?<Eye size={18}/>:<EyeOff size={18}/>}<div><small>Sample net-worth preview</small><b>{stateText}</b></div></div>
  </Card>
  <Card title="Storage & data controls" subtitle="Operate only on fictional records currently held in this browser">
- <div className="p5-storage-list"><div><Archive size={17}/><div><b>Full browser workspace export</b><small>Plain-text JSON containing sample portfolio, planning, decisions and local preferences.</small></div><Button kind="secondary" onClick={exportDemo}><Download size={14}/> Export</Button></div>
+ <div className="p5-storage-list"><div><Archive size={17}/><div><b>Restore a sample workspace backup</b><small>Imports a previously exported Wealth OS JSON file. Structural validation runs before replacing local data.</small></div>
+ <input ref={fileInput} type="file" accept=".json,application/json" aria-label="Select Wealth OS JSON backup" className="p6-visually-hidden" onChange={e=>{void importDemo(e.target.files?.[0])}}/>
+ <Button kind="secondary" onClick={()=>fileInput.current?.click()}>Import</Button></div>
+ <div><Archive size={17}/><div><b>Full browser workspace export</b><small>Plain-text JSON containing sample portfolio, planning, decisions and local preferences.</small></div><Button kind="secondary" onClick={exportDemo}><Download size={14}/> Export</Button></div>
  <div><FileJson size={17}/><div><b>Clear stored advisor transcript</b><small>Deletes the optional offline Q&A transcript for this origin in this browser only.</small></div><Button kind="secondary" onClick={clearAdvisor}>Clear</Button></div>
  <div><Trash2 size={17}/><div><b>Reset local demo data</b><small>Restores fictional seed figures and clears edited local decisions. No remote deletion is performed.</small></div><Button kind="secondary" onClick={deleteDemo}><RefreshCw size={14}/> Reset</Button></div></div>
- {storageError&&<p className="wos-error">{storageError}</p>}
+ {storageError&&<p className="wos-error" role="alert">{storageError}</p>}
  <div className="p5-boundary"><ShieldAlert size={17}/><span>Browser history, external downloaded files and other tabs are outside these reset controls.</span></div>
  </Card></div>
  <div className="wos-grid halves">
