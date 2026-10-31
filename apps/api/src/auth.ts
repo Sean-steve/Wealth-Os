@@ -14,7 +14,7 @@ export function enforceOidcAssurance(payload:{
    fail(403,'REAUTHENTICATION_REQUIRED','A fresh MFA authentication is required.');
  }
  if(config.OIDC_REQUIRE_VERIFIED_EMAIL==='true'&&payload.email_verified!==true)
-  fail(403,'VERIFIED_EMAIL_REQUIRED','The issuer must verify the user's email before Wealth OS access.');
+  fail(403,'VERIFIED_EMAIL_REQUIRED','The issuer must verify the account email before Wealth OS access.');
 }
 
 export function createOidcVerifier(config:ApiConfig):VerifyBearer{
