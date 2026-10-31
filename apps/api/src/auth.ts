@@ -26,7 +26,7 @@ export function createOidcVerifier(config:ApiConfig):VerifyBearer{
     algorithms:['RS256','ES256'],clockTolerance:5,maxTokenAge:'60m'
    });
    if(!payload.sub||!payload.iat||!payload.exp||payload.sub.length>255)fail(401,'INVALID_TOKEN','Access token lacks required identity or lifetime claims.');
-   enforceOidcAssurance(payload,config);
+   enforceOidcAssurance(payload as {acr?:unknown;auth_time?:unknown;email_verified?:unknown},config);
    const scopeClaim=payload.scope;
    const scp=payload.scp;
    const strings=typeof scopeClaim==='string'?scopeClaim.split(/\s+/):Array.isArray(scp)?scp.filter(x=>typeof x==='string'):[];

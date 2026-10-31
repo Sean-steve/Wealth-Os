@@ -7,24 +7,25 @@ import type {ApiConfig} from '../src/env.js';
 const issuer='http://127.0.0.1:8181/realms/wealth-os-ci';
 const response=await fetch(issuer+'/.well-known/openid-configuration',{signal:AbortSignal.timeout(7000)});
 assert.equal(response.status,200);
-const metadata=await response.json();
+const metadata=await response.json() as {issuer:string;response_types_supported:string[];
+ code_challenge_methods_supported:string[];jwks_uri:string;token_endpoint:string};
 assert.equal(metadata.issuer,issuer);
 assert.ok(metadata.response_types_supported.includes('code'));
 assert.ok(metadata.code_challenge_methods_supported.includes('S256'));
-const jwks=await fetch(metadata.jwks_uri,{signal:AbortSignal.timeout(7000)}).then(r=>r.json());
+const jwks=await fetch(metadata.jwks_uri,{signal:AbortSignal.timeout(7000)}).then(async r=>await r.json() as {keys:unknown[]});
 assert.ok(jwks.keys.length>0);
 const token=async(body:URLSearchParams)=>fetch(metadata.token_endpoint,{method:'POST',
  headers:{'content-type':'application/x-www-form-urlencoded'},body,signal:AbortSignal.timeout(8000)});
 const userResponse=await token(new URLSearchParams({grant_type:'password',client_id:'wealth-os-spa-ci',
  username:'ci-protocol',password:'CI-ONLY-protocol-password-2026',scope:'openid profile'}));
-assert.equal(userResponse.status,200);
-const {access_token:userToken}=await userResponse.json();
+if(userResponse.status!==200)throw Error('CI Keycloak protocol user rejected: '+userResponse.status+' '+(await userResponse.text()).slice(0,200));
+const {access_token:userToken}=await userResponse.json() as {access_token:string};
 assert.equal(decodeProtectedHeader(userToken).alg,'RS256');
 assert.equal(decodeJwt(userToken).iss,issuer);
 const sourceResponse=await token(new URLSearchParams({grant_type:'client_credentials',client_id:'wealth-os-source-ci',
  client_secret:'CI-ONLY-source-client-secret-not-a-real-secret'}));
-assert.equal(sourceResponse.status,200);
-const {access_token:sourceToken}=await sourceResponse.json();
+if(sourceResponse.status!==200)throw Error('CI Keycloak service identity rejected: '+sourceResponse.status+' '+(await sourceResponse.text()).slice(0,200));
+const {access_token:sourceToken}=await sourceResponse.json() as {access_token:string};
 assert.equal(decodeProtectedHeader(sourceToken).alg,'RS256');
 const config={OIDC_ISSUER:issuer,OIDC_JWKS_URL:metadata.jwks_uri,OIDC_AUDIENCE:'wealth-os-api',
  INTEGRATION_OIDC_ISSUER:issuer,INTEGRATION_OIDC_JWKS_URL:metadata.jwks_uri,

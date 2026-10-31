@@ -25,7 +25,7 @@ const safe=(raw:string)=> {
 };
 const fetchJson=async(url:string)=>{
  const r=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(7000),
-  headers:{accept:'application/json'},cache:'no-store'});
+  headers:{accept:'application/json'}});
  if(!r.ok)throw Error('Endpoint returned HTTP '+r.status);
  const body=await r.text();
  if(body.length>65536)throw Error('Response exceeds safe metadata size.');

@@ -41,7 +41,8 @@
       "publicClient": false,
       "standardFlowEnabled": false,
       "serviceAccountsEnabled": false,
-      "directAccessGrantsEnabled": false
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect"
     },
     {
       "clientId": "wealth-os-source-ingest",
@@ -49,7 +50,8 @@
       "publicClient": false,
       "standardFlowEnabled": false,
       "serviceAccountsEnabled": false,
-      "directAccessGrantsEnabled": false
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect"
     },
     {
       "clientId": "wealth-os-spa-ci",
@@ -87,7 +89,8 @@
             "access.token.claim": "true"
           }
         }
-      ]
+      ],
+      "protocol": "openid-connect"
     },
     {
       "clientId": "wealth-os-source-ci",
@@ -114,7 +117,8 @@
             "access.token.claim": "true"
           }
         }
-      ]
+      ],
+      "protocol": "openid-connect"
     }
   ],
   "users": [
@@ -129,7 +133,9 @@
           "value": "CI-ONLY-protocol-password-2026",
           "temporary": false
         }
-      ]
+      ],
+      "firstName": "CI",
+      "lastName": "Protocol"
     },
     {
       "username": "ci-otp-required",
@@ -145,7 +151,9 @@
           "value": "CI-ONLY-otp-password-2026",
           "temporary": false
         }
-      ]
+      ],
+      "firstName": "CI",
+      "lastName": "OTP"
     }
   ]
 }
