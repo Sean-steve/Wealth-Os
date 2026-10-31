@@ -1,6 +1,5 @@
 -- B0-001: Wealth OS canonical schema. No bank/transaction execution tables.
 -- Apply as an ADMIN/MIGRATOR role, never as wealth_app.
-BEGIN;
 CREATE SCHEMA IF NOT EXISTS wealth_auth;
 CREATE SCHEMA IF NOT EXISTS wealth_core;
 CREATE SCHEMA IF NOT EXISTS wealth_planning;

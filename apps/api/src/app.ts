@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import type {FastifyInstance,FastifyRequest,FastifyReply} from 'fastify';
 import {createHash,randomUUID} from 'node:crypto';
-import type {Pool,PoolClient} from 'pg';
+import type {Pool} from 'pg';
 import {ZodError,z} from 'zod';
 import type {VerifyBearer,Principal} from './auth.js';
 import {hasScope} from './auth.js';

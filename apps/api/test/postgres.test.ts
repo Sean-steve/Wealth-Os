@@ -20,7 +20,7 @@ describeDb('B0 live PostgreSQL REST, tenant isolation and audit certification',(
   readonly:{subject:'kernel:b0:readonly',issuer:'https://issuer.example.test/',scopes:new Set(['wealth:read'])}
  };
  let firstGoal='';
- const header=(tenant=tenantA,user='owner',other:Record<string,string>={})=>({
+ const header=(tenant:string=tenantA,user='owner',other:Record<string,string>={})=>({
   authorization:'Bearer '+user,'x-wealth-tenant-id':tenant,...other
  });
  const newGoal=(title='Independence goal')=>({
