@@ -1,4 +1,4 @@
-name: Wealth OS B0 Backend Foundation
+name: Wealth OS B1 Domain Certification
 on:
   push:
     branches: [main]
@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 jobs:
-  backend-b0:
+  backend-b1:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:

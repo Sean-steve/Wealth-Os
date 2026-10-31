@@ -124,9 +124,9 @@ export function createApp({pool,verifyBearer,allowedOrigins=[]}:AppDeps):Fastify
  app.get('/api/v1/wealth/capabilities',async request=>{
   const {principal,tenantId}=authFor(request);
   return withTenant(pool,principal,tenantId,async()=>({
-   stage:'B0',mode:'backend-foundation',
+   stage:'B1',mode:'durable-planning-and-consent-gated-projections',
    modules:{profile:'durable',goals:'durable',milestones:'durable',strategies:'durable',capitalProposals:'durable-planning-only',portfolio:'consent-gated-read-only',income:'consent-gated-read-only',liabilities:'consent-gated-read-only',wealthState:'source-reconciliation-gated',forecast:'contract-only',execution:'disabled'},
-   connectedSourceSystems:[],financialExecutionEnabled:false,frontendConnected:false
+   connectedSourceSystems:[],financialExecutionEnabled:false,frontendConnected:'configured-per-environment'
   }));
  });
  app.get('/api/v1/wealth/profile',async (request,reply)=>{

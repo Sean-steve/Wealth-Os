@@ -40,6 +40,11 @@ describeDb('B1 real PostgreSQL durable wealth domains and consent boundaries',()
   await api.ready();
  });
  afterAll(async()=>{await api?.close();await db?.end();await admin?.end()});
+ it('keeps historical strategy versions append-only at the application role level',async()=>{
+  const r=await db.query<{allowed:boolean}>(`SELECT has_table_privilege(current_user,
+   'wealth_planning.strategy_versions','UPDATE') AS allowed`);
+  expect(r.rows[0].allowed).toBe(false);
+ });
  it('allows explicit origin while refusing credentialed cross-origin requests',async()=>{
   const allowed=await api.inject({method:'OPTIONS',url:'/api/v1/wealth/goals',headers:{origin:'https://sean-steve.github.io',
    'access-control-request-method':'POST'}});
