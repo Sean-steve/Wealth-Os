@@ -23,7 +23,7 @@ export function RiskScreen({navigate}:{navigate:(r:'portfolio'|'income'|'liabili
  <Stat title="Sample exposure index" value={report.score+'/100'} hint="100 − 12 per watch − 25 per high; not a probability" icon={<Activity size={18}/>} tone="violet"/>
  <Stat title="High signals" value={String(report.high)} hint="Above critical demonstration threshold" icon={<ShieldAlert size={18}/>} tone="gold"/>
  <Stat title="Watch signals" value={String(report.watch)} hint="Require further investigation" icon={<AlertTriangle size={18}/>} tone="blue"/>
- <Stat title="Within thresholds" value={String(report.healthy)} hint="Of "+report.signals.length+" monitored metrics" icon={<ShieldCheck size={18}/>} tone="teal"/>
+ <Stat title="Within thresholds" value={String(report.healthy)} hint={'Of '+report.signals.length+' monitored metrics'} icon={<ShieldCheck size={18}/>} tone="teal"/>
  </div>
  <Alert>Thresholds are editable-in-code demonstration policies, not Personal Kernel governance, a regulated risk rating, or a basis for automatic financial execution. Real-world source freshness and ownership checks are not connected.</Alert>
  <div className="p4-risk-layout">
