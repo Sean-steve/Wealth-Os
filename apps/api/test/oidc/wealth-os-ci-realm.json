@@ -70,6 +70,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "defaultClientScopes": [
+        "basic",
         "web-origins",
         "roles",
         "profile",
@@ -101,6 +102,7 @@
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": true,
       "defaultClientScopes": [
+        "basic",
         "roles",
         "profile",
         "wealth:ingest"
