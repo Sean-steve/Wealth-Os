@@ -23,7 +23,9 @@ export const menu=[
 {label:'Wealth Portfolio',slug:'portfolio',icon:'portfolio',phase:2,group:'WORKSPACE'},
 {label:'Income Intelligence',slug:'income',icon:'income',phase:2,group:'WORKSPACE'},
 {label:'Liabilities',slug:'liabilities',icon:'liabilities',phase:2,group:'WORKSPACE'},
-{label:'Goals & Strategy',slug:'goals',icon:'goals',phase:3,group:'WORKSPACE'},
+{label:'Goals & Milestones',slug:'goals',icon:'goals',phase:3,group:'WORKSPACE'},
+{label:'Wealth Strategies',slug:'strategies',icon:'strategies',phase:3,group:'WORKSPACE'},
+{label:'Wealth Performance',slug:'performance',icon:'performance',phase:3,group:'WORKSPACE'},
 {label:'Risk Center',slug:'risk',icon:'risk',phase:4,group:'WORKSPACE'},
 {label:'Opportunity Lab',slug:'opportunities',icon:'opportunity',phase:4,group:'WORKSPACE'},
 {label:'Forecast & Scenarios',slug:'forecasts',icon:'forecasts',phase:4,group:'WORKSPACE'},
@@ -34,7 +36,7 @@ export const menu=[
 export type Route=(typeof menu)[number]['slug'];
 export const phaseDeliverables:Record<number,string[]>={
 2:['Net worth dashboard and history','Capital pools and allocation workspace','Portfolio holdings and valuations','Income and liability views'],
-3:['Goal timelines, milestones and strategies','Financial independence planning','Wealth performance analysis'],
+3:['Working Goals & Milestones','Versioned Wealth Strategies','Financial Independence planning','Local Wealth Performance journal'],
 4:['Risk exposures and opportunity comparisons','Forecasts and scenario lab','AI advisor experience (local demonstration)'],
 5:['Decision journal and recommendation management','Policy, consent and approvals','Reports, integrations and security settings']};
 export function money(value:number,compact=true):string{

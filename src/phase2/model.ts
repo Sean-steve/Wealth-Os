@@ -1,3 +1,5 @@
+import {seedPlanning,isPlanningState} from '../phase3/model';
+import type {PlanningState,PerformanceState,FinancialSnapshot,ActivityKind,WealthActivity} from '../phase3/model';
 // Wealth OS v2 Phase 2: deterministic CLIENT-ONLY wealth model.
 // These records are fictitious and are not authoritative Finance OS/Asset OS/Company OS data.
 
@@ -11,7 +13,7 @@ export interface IncomeStream {id:string;name:string;kind:IncomeKind;monthly:num
 export interface CapitalPool {id:string;name:string;purpose:string;balance:number;reserved:number;committed:number}
 export interface Allocation {id:string;poolId:string;target:string;amount:number;date:string}
 export interface Valuation {id:string;positionId:string;previous:number;next:number;at:string;reason:string}
-export interface WealthState {positions:Position[];liabilities:Liability[];income:IncomeStream[];pools:CapitalPool[];allocations:Allocation[];valuations:Valuation[]}
+export interface WealthState {positions:Position[];liabilities:Liability[];income:IncomeStream[];pools:CapitalPool[];allocations:Allocation[];valuations:Valuation[];planning:PlanningState;performance:PerformanceState}
 export const DEMO_DATE='2026-10-31';
 export const initialState:WealthState={
  positions:[
@@ -40,6 +42,8 @@ export const initialState:WealthState={
   {id:'c-opportunity',name:'Opportunity fund',purpose:'Future strategic choices',balance:295000,reserved:0,committed:0}
  ],
  allocations:[{id:'a-seed',poolId:'c-growth',target:'Diversified growth plan (sample)',amount:375000,date:DEMO_DATE}],
+ planning:structuredClone(seedPlanning),
+ performance:{opening:{at:DEMO_DATE,assets:16100000,liabilities:3260000,netWorth:12840000,income:486500,groups:{'Business equity':5800000,'Property':4200000,'Investments':2900000,'Cash & reserves':2160000,'Other':1040000}},entries:[]},
  valuations:[
   {id:'v-business',positionId:'p-business',previous:5500000,next:5800000,at:DEMO_DATE,reason:'Sample valuation update'},
   {id:'v-property',positionId:'p-property',previous:4000000,next:4200000,at:DEMO_DATE,reason:'Sample property estimate'}
@@ -66,7 +70,7 @@ export function summary(s:WealthState){
  const deployable=amount(s.pools.reduce((a,v)=>a+available(v),0));
  const cash=groups['Cash & reserves'];
  const liquid=amount(groups['Cash & reserves']+groups['Investments']-s.liabilities.filter(l=>l.type==='Credit card').reduce((a,l)=>a+l.outstanding,0));
- return {assets,liabilities,netWorth,groups,monthlyIncome,passiveIncome,monthlyDebt,pooled,reserved,committed,deployable,cash,liquid,debtToIncome:monthlyIncome>0?monthlyDebt/monthlyIncome:0,independence:Math.max(0,Math.min(100,netWorth/37500000*100))};
+ return {assets,liabilities,netWorth,groups,monthlyIncome,passiveIncome,monthlyDebt,pooled,reserved,committed,deployable,cash,liquid,debtToIncome:monthlyIncome>0?monthlyDebt/monthlyIncome:0,independence:Math.max(0,Math.min(100,(groups.Investments+deployable)/((s.planning?.independence?.monthlyLifestyleCost??125000)*12/((s.planning?.independence?.withdrawalRatePct??4)/100))*100))};
 }
 export function available(p:CapitalPool){return amount(Math.max(0,p.balance-p.reserved-p.committed))}
 export function requirePositive(value:number,label:string){if(!Number.isFinite(value)||value<=0)throw new Error(label+' must be greater than zero.')}
@@ -131,4 +135,31 @@ export function isValidState(obj:unknown):obj is WealthState{
  if(!obj||typeof obj!=='object')return false;
  const d=obj as Record<string,unknown>;
  return Array.isArray(d.positions)&&d.positions.length<1000&&['liabilities','income','pools','allocations','valuations'].every(k=>Array.isArray(d[k]));
+}
+
+/** Record what changed in THIS browser's sample state, not historical market returns. */
+export function financialSnapshot(s:WealthState,at:string=new Date().toISOString()):FinancialSnapshot {
+ const t=summary(s);
+ return {at,assets:t.assets,liabilities:t.liabilities,netWorth:t.netWorth,income:t.monthlyIncome,groups:{...t.groups}};
+}
+export function hydrateState(raw:unknown):WealthState{
+ if(!isValidState(raw))return structuredClone(initialState);
+ const candidate=raw as WealthState;
+ const planning=isPlanningState(candidate.planning)?candidate.planning:structuredClone(seedPlanning);
+ const previous=candidate.performance;
+ const prepared:WealthState={...candidate,planning,performance:initialState.performance};
+ const valid=previous&&previous.opening&&Array.isArray(previous.entries)&&typeof previous.opening.netWorth==='number';
+ return {...prepared,performance:valid?previous:{opening:financialSnapshot(prepared),entries:[]}};
+}
+export function appendActivity(before:WealthState,after:WealthState):WealthState{
+ const domains=['positions','liabilities','income','pools'] as const;
+ if(!domains.some(k=>JSON.stringify(before[k])!==JSON.stringify(after[k])))return after;
+ const kind:ActivityKind=JSON.stringify(before.liabilities)!==JSON.stringify(after.liabilities)?'LIABILITY'
+  :JSON.stringify(before.positions)!==JSON.stringify(after.positions)
+  ?before.positions.length!==after.positions.length?'POSITION':'VALUATION'
+  :JSON.stringify(before.pools)!==JSON.stringify(after.pools)?'CAPITAL'
+  :JSON.stringify(before.income)!==JSON.stringify(after.income)?'INCOME':'OTHER';
+ const label:Record<ActivityKind,string>={VALUATION:'Illustrative holding valuation revised',POSITION:'Sample portfolio position changed',LIABILITY:'Sample liability balance changed',CAPITAL:'Strategic capital plan updated',INCOME:'Modeled income stream updated',OTHER:'Sample wealth state changed'};
+ const entry:WealthActivity={id:'event-'+new Date().getTime().toString(36)+'-'+Math.random().toString(36).slice(2,7),at:new Date().toISOString(),kind,label:label[kind],before:financialSnapshot(before),after:financialSnapshot(after)};
+ return {...after,performance:{...after.performance,entries:[...after.performance.entries,entry].slice(-200)}};
 }

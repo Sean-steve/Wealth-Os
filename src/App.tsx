@@ -7,17 +7,23 @@ import {
  Search, Bell, ChevronDown, Menu as MenuIcon, X, ArrowUpRight, ArrowRight, Check,
  LockKeyhole, ArrowLeft, Info, CircleCheck, Clock3, ShieldAlert
 } from 'lucide-react';
-import { menu, money, portfolio, goals, periodChanges, phaseDeliverables, series } from './data';
+import { menu, money, portfolio, phaseDeliverables, series } from './data';
 import type { Period, Route } from './data';
 import type { Category } from './phase2/model';
 import { WealthProvider, useWealth } from './phase2/context';
 import { Phase2Screen } from './phase2/Screens';
 import './phase2/styles.css';
+import { GoalsScreen } from './phase3/Goals';
+import { StrategiesScreen } from './phase3/Strategies';
+import { IndependenceScreen } from './phase3/Independence';
+import { PerformanceScreen } from './phase3/Performance';
+import { goalProgress, independenceMetrics } from './phase3/model';
+import './phase3/styles.css';
 
 const iconSet={
  dashboard:LayoutDashboard,networth:TrendingUp,capital:WalletCards,portfolio:BriefcaseBusiness,
  goals:Target,risk:TriangleAlert,opportunity:Sparkles,forecasts:ChartNoAxesCombined,
- independence:Landmark,advisor:BrainCircuit,decisions:NotebookText,governance:ShieldCheck,income:Landmark,liabilities:WalletCards
+ independence:Landmark,advisor:BrainCircuit,decisions:NotebookText,governance:ShieldCheck,income:Landmark,liabilities:WalletCards,strategies:BriefcaseBusiness,performance:ChartNoAxesCombined
 };
 const dateLabel='31 Oct 2026';
 const routes=menu.map(x=>x.slug);
@@ -39,8 +45,8 @@ function Trend({period,setPeriod}:{period:Period,setPeriod:(p:Period)=>void}){
  const labels=period==='ALL'?['2021','2022','2023','2024','2025','2026']:period==='1Y'?['Nov','Jan','Mar','May','Jul','Sep','Oct']:period==='6M'?['May','Jun','Jul','Aug','Sep','Oct']:['01 Oct','06 Oct','11 Oct','16 Oct','21 Oct','26 Oct','31 Oct'];
  return <Panel className="trend-panel">
  <PanelHead title="Wealth trajectory" aside={<div className="tabs" role="group" aria-label="Wealth trajectory period">{(['1M','6M','1Y','ALL'] as Period[]).map(p=><button type="button" key={p} aria-pressed={period===p} className={period===p?'selected':''} onClick={()=>setPeriod(p)}>{p==='ALL'?'All':p}</button>)}</div>}/>
- <div className="trend-summary"><strong>KES 12.84M</strong><span className="positive"><ArrowUpRight size={13}/>{periodChanges[period]}</span></div>
- <div className="minor">Assets less liabilities · illustrative valuations</div>
+ <div className="trend-summary"><strong>{money(metrics.netWorth)}</strong><span className="positive">Sample trajectory · not real history</span></div>
+ <div className="minor">Assets less liabilities · curve is hypothetical, latest point reflects current local state</div>
  <div className="chart-wrap" aria-label={'Sample wealth trend in millions of Kenyan shillings, '+period}>
  <ResponsiveContainer width="100%" height={214}>
   <AreaChart data={chart} margin={{top:15,right:7,left:-15,bottom:0}}>
@@ -53,7 +59,7 @@ function Trend({period,setPeriod}:{period:Period,setPeriod:(p:Period)=>void}){
   </AreaChart>
  </ResponsiveContainer>
  </div>
- <div className="chart-footer"><span><i className="dot purple"/> Net worth</span><span><i className="dot lavender"/> Historical trend</span><span className="end">+KES 1.94M <b>annual increase</b></span></div>
+ <div className="chart-footer"><span><i className="dot purple"/> Net worth</span><span><i className="dot lavender"/> Historical trend</span><span className="end">Illustrative trend <b>not verified performance</b></span></div>
  </Panel>
 }
 function Composition({onRisk}:{onRisk:()=>void}){
@@ -67,9 +73,15 @@ function Composition({onRisk}:{onRisk:()=>void}){
  <div className="panel-bottom"><span>Selected exposure: <b>{current.name} · {current.share.toFixed(1)}%</b></span><button className="text-button" type="button" onClick={onRisk}>Review exposure <ArrowUpRight size={12}/></button></div></Panel>
 }
 function Goals({navigate}:{navigate:(r:Route)=>void}){
- return <Panel><PanelHead title="Goals in motion" aside="3 active goals"/>{goals.map((g,i)=><button type="button" className="goal-row" key={g.name} onClick={()=>navigate('goals')}>
- <span className={'goal-icon g'+i}>{i===0?'◎':i===1?'▤':'⌂'}</span><span className="goal-main"><b>{g.name}</b><small>{g.detail}</small><span className="track"><span style={{width:g.progress+'%',background:g.color}}/></span></span><strong>{g.progress}%</strong></button>)}</Panel>
+ const {state,metrics}=useWealth();
+ const visible=state.planning.goals.filter(g=>g.status==='ACTIVE').slice(0,3);
+ return <Panel><PanelHead title="Goals in motion" aside={visible.length+' active goals'}/>
+ {visible.map((g,i)=>{const progress=goalProgress(g,state,metrics);return <button type="button" className="goal-row" key={g.id} onClick={()=>navigate('goals')}>
+ <span className={'goal-icon g'+(i%3)}>{i===0?'◎':i===1?'▤':'⌂'}</span><span className="goal-main"><b>{g.title}</b><small>{g.deadline} · measured from sample wealth</small><span className="track"><span style={{width:progress.percent+'%',background:['#7b6ef4','#47b79a','#dea958'][i%3]}}/></span></span><strong>{progress.percent.toFixed(1)}%</strong></button>})}
+ {!visible.length&&<p className="minor">No active goals. Open Goals & Milestones to create one.</p>}
+ </Panel>
 }
+
 function Capital({navigate}:{navigate:(r:Route)=>void}){
  const {metrics,state}=useWealth();
  const featured=[
@@ -94,17 +106,18 @@ return <Panel><PanelHead title="Risk watch" aside="Monitoring · 2 signals"/><bu
 }
 function Dashboard({navigate,onOpen}:{navigate:(r:Route)=>void,onOpen:(d:DialogName)=>void}){
  const [period,setPeriod]=useState<Period>('1Y');
- const {metrics}=useWealth();
+ const {metrics,state}=useWealth();
+ const independence=independenceMetrics(state,metrics);
  return <><div className="eyebrow"><span className="tiny-diamond"/> YOUR PERSONAL WEALTH INTELLIGENCE</div><div className="heading-row"><div><h1>Command Center <span>↗</span></h1><p>A clearer picture of where you stand — and your best next decision.</p></div><div className="heading-actions"><span className="sample-label">✦ Concept preview · Sample KES data</span><button type="button" className="primary" onClick={()=>onOpen('simulation')}><Sparkles size={14}/> Run a simulation</button></div></div>
  <div className="metrics-grid">
   <div className="hero surface"><div className="hero-top"><span>Total net worth</span><small>As of {dateLabel}</small></div><div className="hero-main"><strong>{money(metrics.netWorth)}</strong><Badge tone="green">Local sample</Badge></div><p>Consolidated from editable illustrative holdings</p><div className="hero-values"><span>Assets <strong>{money(metrics.assets)}</strong></span><span>Liabilities <strong>{money(metrics.liabilities)}</strong></span></div><svg className="hero-spark" viewBox="0 0 250 70" aria-hidden="true"><defs><linearGradient id="sparkfill" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#8375ff" stopOpacity=".3"/><stop offset="1" stopColor="#8375ff" stopOpacity="0"/></linearGradient></defs><path d="M0 64 L24 53 L48 55 L70 44 L94 48 L119 29 L145 32 L167 13 L192 22 L218 3 L249 0 L249 70 L0 70Z" fill="url(#sparkfill)"/><polyline points="0,64 24,53 48,55 70,44 94,48 119,29 145,32 167,13 192,22 218,3 249,0" stroke="#8b7ffd" strokeWidth="3" fill="none"/></svg></div>
   <Metric label="Deployable capital" value={money(metrics.deployable)} icon={<WalletCards size={18}/>} action={()=>navigate('capital')} foot={<><span className="green-text">● Available now</span> · after reserves and commitments<div className="metric-divider"/><div className="foot-between">Protected liquidity <b>{money(metrics.reserved+metrics.committed)}</b></div></>}/>
-  <Metric label="Financial independence" value={metrics.independence.toFixed(1)+'%'} icon={<Target size={18}/>} action={()=>navigate('independence')} foot={<><div className="positive tight"><ArrowUpRight size={12}/> Illustrative target</div><div className="muted-gap">Toward your KES 37.5M independence target</div><div className="track"><span style={{width:metrics.independence+'%'}}/></div><div className="faint">{money(metrics.passiveIncome)} estimated monthly passive income</div></>}/>
+  <Metric label="Financial independence" value={metrics.independence.toFixed(1)+'%'} icon={<Target size={18}/>} action={()=>navigate('independence')} foot={<><div className="positive tight"><ArrowUpRight size={12}/> Illustrative target</div><div className="muted-gap">Toward your {money(independence.capitalRequired)} independence target</div><div className="track"><span style={{width:metrics.independence+'%'}}/></div><div className="faint">{money(metrics.passiveIncome)} estimated monthly passive income</div></>}/>
  </div>
  <div className="row-two"><Trend period={period} setPeriod={setPeriod}/><Composition onRisk={()=>onOpen('risk')}/></div>
  <div className="row-three"><Goals navigate={navigate}/><Capital navigate={navigate}/><DecisionDesk open={()=>onOpen('decision')}/></div>
  <div className="row-bottom"><OpportunityRadar open={()=>onOpen('opportunity')}/><RiskWatch open={()=>onOpen('risk')}/></div>
- <footer className="dashboard-foot">Wealth OS Phase 2 · Browser-local interactive prototype · All figures and insights are illustrative. No bank, Personal Kernel or AI service is connected.</footer>
+ <footer className="dashboard-foot">Wealth OS Phase 3 · Browser-local strategic wealth prototype · All figures and insights are illustrative. No bank, Personal Kernel or AI service is connected.</footer>
  </>
 }
 function FutureScreen({route,navigate}:{route:Route,navigate:(r:Route)=>void}){
@@ -147,17 +160,17 @@ function AppShell(){
  {mobileOpen&&<button type="button" className="mobile-backdrop" aria-label="Close navigation" onClick={()=>setMobileOpen(false)}/>}
  <aside className={'sidebar '+(mobileOpen?'open':'')} aria-label="Wealth OS navigation">
  <div className="brand"><span className="brandmark">◇</span><span className="brand-text">wealth<span>os</span><small>PERSONAL KERNEL</small></span></div>
- {(['WORKSPACE','INTELLIGENCE'] as const).map(group=><div key={group}><div className="nav-title">{group}</div><nav aria-label={group.toLowerCase()}>{menu.filter(x=>x.group===group).map(item=>{const Icon=iconSet[item.icon];return <button type="button" key={item.slug} className={'nav-item '+(route===item.slug?'active':'')} onClick={()=>navigate(item.slug)} aria-current={route===item.slug?'page':undefined}><Icon size={17} strokeWidth={1.85}/><span>{item.label}</span>{item.phase>2&&<span className="nav-phase">·</span>}</button>})}</nav></div>)}
+ {(['WORKSPACE','INTELLIGENCE'] as const).map(group=><div key={group}><div className="nav-title">{group}</div><nav aria-label={group.toLowerCase()}>{menu.filter(x=>x.group===group).map(item=>{const Icon=iconSet[item.icon];return <button type="button" key={item.slug} className={'nav-item '+(route===item.slug?'active':'')} onClick={()=>navigate(item.slug)} aria-current={route===item.slug?'page':undefined}><Icon size={17} strokeWidth={1.85}/><span>{item.label}</span>{item.phase>3&&<span className="nav-phase">·</span>}</button>})}</nav></div>)}
  <div className="sidebar-grow"/>
  <div className="kernel-status"><div><span className="kernel-dot"/>Kernel bridge · Planned</div><p>Frontend preview only. No cross-OS data connection is active.</p></div>
  <div className="side-account"><span className="avatar">WO</span><div><b>Personal Wealth</b><small>Sample workspace</small></div><ChevronDown size={14}/></div>
  </aside>
  <div className="page">
  <header className="topbar"><button type="button" className="mobile-trigger" onClick={()=>setMobileOpen(true)} aria-label="Open navigation"><MenuIcon size={20}/></button>
- <div className="search-shell"><Search size={16}/><input ref={searchRef} type="search" aria-label="Search Wealth OS modules" value={search} onFocus={()=>setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} placeholder="Search wealth, goals, decisions..."/><span className="shortcut">⌘ K</span>{searchOpen&&<div className="search-results">{results.length?results.map(item=><button key={item.slug} type="button" onClick={()=>navigate(item.slug)}>{item.label}<span>{item.phase<=2?'Open screen':'Phase '+item.phase}</span></button>):<p>No matching Wealth OS modules</p>}</div>}</div>
- <div className="top-actions"><div className="popover-anchor"><button type="button" className="icon-btn notification" aria-label="Show notifications" aria-expanded={noticesOpen} onClick={()=>{setNoticesOpen(v=>!v);setProfileOpen(false)}}><Bell size={18}/><i/></button>{noticesOpen&&<div className="popover"><b>Preview notifications</b><p><Clock3 size={15}/> Wealth OS Phase 2 is ready to explore.</p><p><Info size={15}/> No live financial alerts are connected.</p></div>}</div><div className="top-divider"/><button type="button" className="connection" onClick={()=>navigate('governance')}><i/> Preview mode <ChevronDown size={13}/></button><div className="popover-anchor"><button type="button" className="avatar top-avatar" aria-label="Open workspace menu" onClick={()=>{setProfileOpen(v=>!v);setNoticesOpen(false)}}>WO</button>{profileOpen&&<div className="popover account-popover"><b>Personal Wealth</b><p>Sample workspace · no sign-in</p><button type="button" onClick={()=>navigate('governance')}>View governance roadmap <ArrowRight size={13}/></button></div>}</div></div>
+ <div className="search-shell"><Search size={16}/><input ref={searchRef} type="search" aria-label="Search Wealth OS modules" value={search} onFocus={()=>setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} placeholder="Search wealth, goals, decisions..."/><span className="shortcut">⌘ K</span>{searchOpen&&<div className="search-results">{results.length?results.map(item=><button key={item.slug} type="button" onClick={()=>navigate(item.slug)}>{item.label}<span>{item.phase<=3?'Open screen':'Phase '+item.phase}</span></button>):<p>No matching Wealth OS modules</p>}</div>}</div>
+ <div className="top-actions"><div className="popover-anchor"><button type="button" className="icon-btn notification" aria-label="Show notifications" aria-expanded={noticesOpen} onClick={()=>{setNoticesOpen(v=>!v);setProfileOpen(false)}}><Bell size={18}/><i/></button>{noticesOpen&&<div className="popover"><b>Preview notifications</b><p><Clock3 size={15}/> Wealth OS Phase 3 is ready to explore.</p><p><Info size={15}/> No live financial alerts are connected.</p></div>}</div><div className="top-divider"/><button type="button" className="connection" onClick={()=>navigate('governance')}><i/> Preview mode <ChevronDown size={13}/></button><div className="popover-anchor"><button type="button" className="avatar top-avatar" aria-label="Open workspace menu" onClick={()=>{setProfileOpen(v=>!v);setNoticesOpen(false)}}>WO</button>{profileOpen&&<div className="popover account-popover"><b>Personal Wealth</b><p>Sample workspace · no sign-in</p><button type="button" onClick={()=>navigate('governance')}>View governance roadmap <ArrowRight size={13}/></button></div>}</div></div>
  </header>
- <main className="content" onClick={()=>{if(searchOpen)setSearchOpen(false)}}>{route==='dashboard'?<Dashboard navigate={navigate} onOpen={setDialog}/>:['net-worth','capital','portfolio','income','liabilities'].includes(route)?<Phase2Screen route={route as 'net-worth'|'capital'|'portfolio'|'income'|'liabilities'}/>:<FutureScreen route={current.slug} navigate={navigate}/>}</main>
+ <main className="content" onClick={()=>{if(searchOpen)setSearchOpen(false)}}>{route==='dashboard'?<Dashboard navigate={navigate} onOpen={setDialog}/>:['net-worth','capital','portfolio','income','liabilities'].includes(route)?<Phase2Screen route={route as 'net-worth'|'capital'|'portfolio'|'income'|'liabilities'}/>:route==='goals'?<GoalsScreen navigate={navigate}/>:route==='strategies'?<StrategiesScreen navigate={navigate}/>:route==='independence'?<IndependenceScreen navigate={navigate}/>:route==='performance'?<PerformanceScreen navigate={navigate}/>:<FutureScreen route={current.slug} navigate={navigate}/>}</main>
  </div><Modal dialog={dialog} close={()=>setDialog(null)}/>
  {notice&&<div className="wos-toast" role="status"><Check size={16}/>{notice}<button className="wos-toast-close" aria-label="Dismiss notice" type="button" onClick={()=>notify('')}><X size={15}/></button></div>}
  </div>
