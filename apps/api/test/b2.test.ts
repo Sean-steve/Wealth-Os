@@ -188,6 +188,17 @@ describePg('B2: verified boundaries and authoritative, replay-safe source snapsh
    asOf:new Date(Date.now()-4*3600_000).toISOString()};
   expect((await push('Finance OS',old)).statusCode).toBe(409);
  });
+ it('revoked source producer authority invalidates the previously trusted net-worth projection',async()=>{
+  await admin.query(`UPDATE wealth_integration.source_grants SET state='REVOKED',revoked_at=now()
+   WHERE tenant_id=$1 AND source_system='Company OS'`,[tenant]);
+  const state=await api.inject({method:'GET',url:'/api/v1/wealth/state',headers:auth()});
+  expect(state.statusCode).toBe(200);
+  expect(state.json().data.netWorth).toBeNull();
+  expect(state.json().data.blockers).toContain('Company OS: no signed receipt from an active, approved source producer');
+  const status=await api.inject({method:'GET',url:'/api/v1/wealth/sources/status',headers:auth()});
+  expect(status.json().data.find((x:{sourceSystem:string})=>x.sourceSystem==='Company OS').status)
+   .toBe('PRODUCER_NOT_BOUND');
+ });
  it('revoked consent blocks further ingestion and hides subject-specific source data',async()=>{
   await admin.query(`UPDATE wealth_auth.consent_grants SET revoked_at=now()
    WHERE tenant_id=$1 AND source_system='Finance OS'`,[tenant]);

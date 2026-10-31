@@ -212,8 +212,9 @@ describeDb('B1 real PostgreSQL durable wealth domains and consent boundaries',()
   }
   const owner=await api.inject({method:'GET',url:'/api/v1/wealth/state',headers:headers()});
   expect(owner.statusCode).toBe(200);
-  expect(owner.json().data.status).toBe('RECONCILED_SOURCE_PROJECTION');
-  expect(Number(owner.json().data.netWorth)).toBe(400000);
+  expect(owner.json().data.status).toBe('INCOMPLETE');
+  expect(owner.json().data.netWorth).toBeNull();
+  expect(owner.json().data.blockers).toContain('Asset OS: no signed receipt from an active, approved source producer');
   const holdings=await api.inject({method:'GET',url:'/api/v1/wealth/portfolio/holdings',headers:headers()});
   expect(holdings.json().data).toHaveLength(2);
   const noConsent=await api.inject({method:'GET',url:'/api/v1/wealth/state',headers:headers(a,'viewer')});

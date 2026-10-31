@@ -602,7 +602,7 @@ paths:
                         sourceSystem: {enum: ['Finance OS','Asset OS','Company OS']}
                         consented: {type: boolean}
                         authorizedProducerBound: {type: boolean}
-                        status: {enum: [CONSENT_REQUIRED,PRODUCER_NOT_BOUND,AWAITING_SNAPSHOT,STALE,CURRENT]}
+                        status: {enum: [CONSENT_REQUIRED,PRODUCER_NOT_BOUND,AWAITING_SNAPSHOT,UNVERIFIED_RECEIPT,STALE,CURRENT]}
                         sourceAsOf: {type: [string,'null']}
                         sourceRevision: {type: [string,'null']}
         '403': {description: Token subject lacks verified issuer-bound Kernel identity and tenant membership}

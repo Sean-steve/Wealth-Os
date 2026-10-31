@@ -60,10 +60,22 @@ export function registerProjectionRoutes(app:FastifyInstance,pool:Pool,t:B1Tools
   const {principal,tenantId}=t.authFor(request);
   return withTenant(pool,principal,tenantId,async ctx=>{
    const access=await sourceAccess(ctx);
-   const watermarks=await ctx.client.query<{sourceSystem:Source;complete:boolean;asOf:Date;revision:string}>(`
-    SELECT source_system AS "sourceSystem",complete,as_of AS "asOf",source_revision AS revision
+   const watermarks=await ctx.client.query<{sourceSystem:Source;complete:boolean;asOf:Date;revision:string;snapshotHash:string|null;producerSubject:string|null}>(`
+    SELECT source_system AS "sourceSystem",complete,as_of AS "asOf",source_revision AS revision,
+     snapshot_hash AS "snapshotHash",producer_subject AS "producerSubject"
     FROM wealth_integration.source_watermarks WHERE tenant_id=$1 AND source_system=ANY($2::text[])`,
     [tenantId,access.allowed]);
+   const trusted=await ctx.client.query<{sourceSystem:Source;revision:string;hash:string}>(`
+    SELECT i.source_system AS "sourceSystem",i.source_revision AS revision,i.snapshot_hash AS hash
+    FROM wealth_integration.source_ingestions i
+    JOIN wealth_integration.source_grants g ON g.tenant_id=i.tenant_id
+     AND g.source_system=i.source_system AND g.producer_subject=i.producer_subject
+     AND g.producer_issuer=i.producer_issuer AND g.state='ACTIVE' AND g.revoked_at IS NULL
+     AND g.authorized_subject=$2 AND g.authorized_issuer=$3
+    JOIN wealth_integration.source_watermarks w ON w.tenant_id=i.tenant_id AND w.source_system=i.source_system
+      AND w.source_revision=i.source_revision AND w.snapshot_hash=i.snapshot_hash
+    WHERE i.tenant_id=$1 AND i.source_system=ANY($4::text[])`,
+    [tenantId,principal.subject,principal.issuer,access.allowed]);
    const reasons:string[]=[];
    for(const source of systems){
     if(!access.allowed.includes(source)){reasons.push(source+': missing subject-scoped read consent');continue}
@@ -72,6 +84,9 @@ export function registerProjectionRoutes(app:FastifyInstance,pool:Pool,t:B1Tools
     if(!w.complete){reasons.push(source+': snapshot explicitly incomplete');continue}
     const age=Date.now()-new Date(w.asOf).getTime();
     if(!Number.isFinite(age)||age< -300000||age>86400000)reasons.push(source+': snapshot older than 24 hours or invalid');
+    if(!w.snapshotHash||!w.producerSubject||!trusted.rows.some(t=>
+     t.sourceSystem===source&&t.hash===w.snapshotHash&&t.revision===w.revision))
+     reasons.push(source+': no signed receipt from an active, approved source producer');
    }
    const coverage=await ctx.client.query<{count:string;invalidCount:string;staleCount:string;otherCurrencyCount:string}>(`
      SELECT COUNT(*)::text AS count,
