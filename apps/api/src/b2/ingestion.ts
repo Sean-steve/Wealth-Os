@@ -11,7 +11,7 @@ const tenantIdSchema=z.string().uuid();
 const sourcePath=z.enum(['finance','asset','company']);
 const decodeSource=(name:string):SourceSystem=>({
  finance:'Finance OS',asset:'Asset OS',company:'Company OS'
-})[name as 'finance'|'asset'|'company'];
+})[name as 'finance'|'asset'|'company'] as SourceSystem;
 const fingerprint=(snapshot:SourceSnapshot)=>
  createHash('sha256').update(JSON.stringify(snapshot)).digest('hex');
 

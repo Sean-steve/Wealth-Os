@@ -16,7 +16,7 @@ try{
  process.once('SIGTERM',()=>{void shutdown()});
  process.once('SIGINT',()=>{void shutdown()});
  await app.listen({host:config.HOST,port:config.PORT});
- process.stdout.write('Wealth OS B0 API listening (authenticated tenant-scoped APIs only).\n');
+ process.stdout.write('Wealth OS B2 API listening (tenant scope and signed-source boundary enforced).\n');
 }catch(error){
  await pool.end();await ingestionPool?.end();
  process.stderr.write('Wealth OS API startup failed: '+(error instanceof Error?error.message:'Unknown failure')+'\n');
