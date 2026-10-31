@@ -4,3 +4,10 @@ dist/
 .env.*
 !.env.example
 *.log
+
+# B0 local backend secrets and generated test output
+apps/api/.env
+apps/api/.env.*.local
+apps/api/node_modules/
+apps/api/coverage/
+apps/api/dist/

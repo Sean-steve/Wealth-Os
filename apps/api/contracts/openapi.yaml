@@ -1,0 +1,232 @@
+openapi: 3.1.0
+info:
+  title: Wealth OS B0 REST Contracts
+  version: 0.1.0-b0
+  description: >
+    Real PostgreSQL persistence for Wealth-owned profile and goal records.
+    Other wealth APIs remain explicitly not implemented. No bank execution
+    or cross-OS connection exists. Financial data must not be treated as verified.
+servers:
+  - url: http://127.0.0.1:3009
+security:
+  - OidcAccessToken: [wealth:read]
+tags:
+  - name: Platform
+  - name: Profile
+  - name: Goals
+components:
+  securitySchemes:
+    OidcAccessToken:
+      type: oauth2
+      description: >
+        Personal Kernel-approved OIDC access token verified using issuer, audience,
+        signature, expiration, issued-at and supported asymmetric JWT algorithms.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://issuer.example.test/authorize
+          tokenUrl: https://issuer.example.test/token
+          scopes:
+            wealth:read: Read tenant-scoped wealth resources
+            wealth:write: Modify Wealth-owned strategic records
+  parameters:
+    Tenant:
+      name: X-Wealth-Tenant-Id
+      in: header
+      required: true
+      description: Requested tenant UUID. Never authoritative until DB membership is verified.
+      schema: {type: string, format: uuid}
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Quoted integer version, e.g. '"1"'. Use '"0"' when creating a profile.
+      schema: {type: string, pattern: '^"(0|[1-9][0-9]*)"$'}
+    Idempotency:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Unique, 8–128 characters; actor and request payload are bound to the key.
+      schema: {type: string, minLength: 8, maxLength: 128}
+    GoalId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details, correlation_id]
+          properties:
+            code: {type: string}
+            message: {type: string}
+            details: {type: object}
+            correlation_id: {type: string, format: uuid}
+    Profile:
+      type: object
+      required: [tenantId,baseCurrency,wealthStage,strategyNote,version,updatedAt]
+      properties:
+        tenantId: {type: string, format: uuid}
+        baseCurrency: {const: KES}
+        wealthStage: {type: string, enum: [BUILDING,GROWING,PROTECTING,INDEPENDENT,LEGACY]}
+        strategyNote: {type: string, maxLength: 2000}
+        version: {type: string, description: "Positive integer as string."}
+        updatedAt: {type: string, format: date-time}
+    ProfileInput:
+      type: object
+      additionalProperties: false
+      required: [baseCurrency,wealthStage]
+      properties:
+        baseCurrency: {const: KES}
+        wealthStage: {type: string, enum: [BUILDING,GROWING,PROTECTING,INDEPENDENT,LEGACY]}
+        strategyNote: {type: string, maxLength: 2000}
+    Goal:
+      type: object
+      required: [id,tenantId,title,metric,targetAmount,targetDate,priority,status,version,createdAt,updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        tenantId: {type: string, format: uuid}
+        title: {type: string}
+        metric: {type: string, enum: [NET_WORTH,LIQUID_WEALTH,PASSIVE_INCOME,DEPLOYABLE_CAPITAL,INVESTED_CAPITAL,CUSTOM]}
+        targetAmount: {type: string, pattern: '^[0-9]+(\\.[0-9]{1,4})?$'}
+        targetDate: {type: string, format: date}
+        priority: {type: string, enum: [LOW,MEDIUM,HIGH]}
+        status: {type: string, enum: [ACTIVE,PAUSED,COMPLETED,ARCHIVED]}
+        version: {type: string}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    GoalCreate:
+      type: object
+      additionalProperties: false
+      required: [title,metric,targetAmount,targetDate]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 160}
+        metric: {type: string, enum: [NET_WORTH,LIQUID_WEALTH,PASSIVE_INCOME,DEPLOYABLE_CAPITAL,INVESTED_CAPITAL,CUSTOM]}
+        targetAmount: {type: string, pattern: '^[0-9]+(\\.[0-9]{1,4})?$'}
+        targetDate: {type: string, format: date}
+        priority: {type: string, enum: [LOW,MEDIUM,HIGH]}
+    GoalPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        title: {type: string, minLength: 1, maxLength: 160}
+        metric: {type: string, enum: [NET_WORTH,LIQUID_WEALTH,PASSIVE_INCOME,DEPLOYABLE_CAPITAL,INVESTED_CAPITAL,CUSTOM]}
+        targetAmount: {type: string}
+        targetDate: {type: string, format: date}
+        priority: {type: string, enum: [LOW,MEDIUM,HIGH]}
+        status: {type: string, enum: [ACTIVE,PAUSED,COMPLETED,ARCHIVED]}
+paths:
+  /health:
+    get:
+      tags: [Platform]
+      summary: Liveness; no identity required; never exposes financial data
+      security: []
+      responses:
+        '200': {description: Process alive}
+  /ready:
+    get:
+      tags: [Platform]
+      summary: PostgreSQL connectivity, no secrets or tenant data
+      security: []
+      responses:
+        '200': {description: Database reachable}
+        '503': {description: Database unavailable}
+  /api/v1/wealth/capabilities:
+    get:
+      tags: [Platform]
+      summary: Authenticated feature readiness (B0)
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200': {description: Explicitly flags incomplete integrations}
+        '401': {description: Missing or invalid access token}
+        '403': {description: Not authorized to the tenant}
+  /api/v1/wealth/profile:
+    get:
+      tags: [Profile]
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200':
+          description: Versioned durable Wealth OS profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {data: {$ref: '#/components/schemas/Profile'}}
+        '404': {description: Profile not created}
+    put:
+      tags: [Profile]
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters:
+        - {$ref: '#/components/parameters/Tenant'}
+        - {$ref: '#/components/parameters/IfMatch'}
+        - {$ref: '#/components/parameters/Idempotency'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProfileInput'}
+      responses:
+        '200': {description: Updated version, ETag in response}
+        '201': {description: Created with If-Match 0}
+        '409': {description: Version conflict or idempotency collision}
+        '428': {description: Missing precondition or idempotency key}
+  /api/v1/wealth/goals:
+    get:
+      tags: [Goals]
+      parameters:
+        - {$ref: '#/components/parameters/Tenant'}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 50}}
+        - {name: cursor, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Keyset-paginated list with nextCursor}
+    post:
+      tags: [Goals]
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters:
+        - {$ref: '#/components/parameters/Tenant'}
+        - {$ref: '#/components/parameters/Idempotency'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GoalCreate'}
+      responses:
+        '201': {description: Goal created, Location and ETag headers}
+        '400': {description: Invalid input}
+        '409': {description: Idempotency conflict}
+        '428': {description: Missing key}
+  /api/v1/wealth/goals/{id}:
+    get:
+      tags: [Goals]
+      parameters:
+        - {$ref: '#/components/parameters/Tenant'}
+        - {$ref: '#/components/parameters/GoalId'}
+      responses:
+        '200':
+          description: Tenant-scoped goal with ETag
+          content:
+            application/json:
+              schema: {type: object, properties: {data: {$ref: '#/components/schemas/Goal'}}}
+        '404': {description: Missing or inaccessible goal}
+    patch:
+      tags: [Goals]
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters:
+        - {$ref: '#/components/parameters/Tenant'}
+        - {$ref: '#/components/parameters/GoalId'}
+        - {$ref: '#/components/parameters/IfMatch'}
+        - {$ref: '#/components/parameters/Idempotency'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GoalPatch'}
+      responses:
+        '200': {description: Updated goal}
+        '404': {description: Goal missing}
+        '409': {description: Version/idempotency conflict}
+        '428': {description: Missing precondition or idempotency key}

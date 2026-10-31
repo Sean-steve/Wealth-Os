@@ -36,3 +36,7 @@ See `docs/PHASE_1.md` through `docs/PHASE_6.md` for scope and acceptance criteri
 ### Certification boundary
 
 The v0.6 workflow gates GitHub Pages on unit tests, strict TypeScript, production build and Chromium end-to-end testing. This certifies a **fictional browser-local demonstration only**, not production finance, security or accessibility compliance. See `docs/PHASE_6.md` for coverage, limitations and release requirements.
+
+## Backend Phase B0 — Separate PostgreSQL API foundation
+
+New backend under `apps/api/` with tenant-scoped PostgreSQL, first durable Wealth OS Profile and Goals REST endpoints, authorization boundaries, transactional audit/outbox, contracts and separate CI. **The existing Pages frontend remains browser-local and has not been switched to this API.** See `docs/PHASE_B0.md` for setup, source-of-truth authority, security limitations and B1 prerequisites.

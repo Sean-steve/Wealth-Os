@@ -1,0 +1,49 @@
+name: Wealth OS B0 Backend Foundation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/wealth-backend.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backend-b0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local_ci_postgres_only
+          POSTGRES_DB: wealth_os_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wealth_os_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      WEALTH_MIGRATOR_DATABASE_URL: postgresql://postgres:local_ci_postgres_only@127.0.0.1:5432/wealth_os_ci
+      WEALTH_APP_DATABASE_URL: postgresql://wealth_app:local_ci_app_only@127.0.0.1:5432/wealth_os_ci
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install API dependencies
+        run: npm install --prefix apps/api --no-audit --no-fund
+      - name: Provision restricted CI database role
+        run: npm run db:ci:role --prefix apps/api
+      - name: Apply versioned Postgres migrations
+        run: npm run db:migrate --prefix apps/api
+      - name: Verify migration idempotence
+        run: npm run db:migrate --prefix apps/api
+      - name: Strict API TypeScript
+        run: npm run typecheck --prefix apps/api
+      - name: Unit and cross-tenant PostgreSQL contract tests
+        run: npm run test:all --prefix apps/api
