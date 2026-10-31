@@ -179,8 +179,8 @@ describeDb('B1 real PostgreSQL durable wealth domains and consent boundaries',()
          ($1,'Finance OS','account','cash-123','CASH',1,100000,'KES',now(),'reconciled','v1','VERIFIED'),
          ($2,'Asset OS','asset','other-tenant','PROPERTY',1,90000000,'KES',now(),'external','v1','VERIFIED')`,[a,b]);
   await admin.query(`INSERT INTO wealth_portfolio.liability_projections
-   (tenant_id,source_system,source_entity_id,outstanding_amount,currency,source_as_of)
-   VALUES($1,'Finance OS','loan-123',200000,'KES',now())`,[a]);
+   (tenant_id,source_system,source_entity_id,outstanding_amount,currency,source_as_of,provenance)
+   VALUES($1,'Finance OS','loan-123',200000,'KES',now(),'{}'::jsonb)`,[a]);
   for(const system of ['Finance OS','Asset OS','Company OS']){
    await admin.query(`INSERT INTO wealth_integration.source_watermarks
      (tenant_id,source_system,source_revision,as_of,complete)

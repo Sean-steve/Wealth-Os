@@ -42,8 +42,10 @@ export function registerCapitalRoutes(app:FastifyInstance,pool:Pool,t:B1Tools){
   const response=await withTenant(pool,principal,tenantId,async ctx=>{
    requireMemberWrite(ctx.role,'GOAL');
    return t.idempotent(ctx,request,{...input,version},async()=>{
+    // Serialize proposal affordability checks without UPDATE privileges on Finance OS source classifications.
+    await ctx.client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,31))',[tenantId+':'+input.poolId]);
     const r=await ctx.client.query<{id:string;version:string;freshSource:boolean;sourceEntityRef:string|null;sourceAsOf:Date|null;classifiedCash:string;reservedCash:string;committedCash:string;uncommittedCash:string}>(
-     poolSelect+' WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,input.poolId]);
+     poolSelect+' WHERE tenant_id=$1 AND id=$2',[tenantId,input.poolId]);
     if(!r.rowCount)fail(404,'POOL_NOT_FOUND','Capital classification not found for this tenant.');
     const source=r.rows[0];
     if(Number(source.version)!==version)fail(409,'VERSION_CONFLICT','Finance-sourced capital data changed. Reload before creating an intent.');
