@@ -34,7 +34,7 @@ export function registerProjectionRoutes(app:FastifyInstance,pool:Pool,t:B1Tools
   const {principal,tenantId}=t.authFor(request);
   return withTenant(pool,principal,tenantId,async ctx=>{
    const access=await sourceAccess(ctx);
-   const r=await ctx.client.query(holdings+' WHERE tenant_id=$1 AND source_system=ANY($2::text[]) ORDER BY source_system,source_entity_id,id LIMIT 1000',
+   const r=await ctx.client.query(holdings+' WHERE tenant_id=$1 AND source_active=true AND source_system=ANY($2::text[]) ORDER BY source_system,source_entity_id,id LIMIT 1000',
     [tenantId,access.allowed]);
    return {data:r.rows,consentedSourceSystems:access.allowed,missingConsents:access.missing,readOnly:true,
     notice:'Authoritative assets are owned by Asset OS, Finance OS and Company OS; projections are not directly editable here.'};
@@ -75,11 +75,11 @@ export function registerProjectionRoutes(app:FastifyInstance,pool:Pool,t:B1Tools
    }
    const coverage=await ctx.client.query<{count:string;invalidCount:string;staleCount:string;otherCurrencyCount:string}>(`
      SELECT COUNT(*)::text AS count,
-     COUNT(*) FILTER (WHERE quality_status<>'VERIFIED' OR valuation_amount IS NULL OR valuation_as_of IS NULL)::text AS "invalidCount",
+     COUNT(*) FILTER (WHERE canonical_asset_ref IS NULL OR quality_status<>'VERIFIED' OR valuation_amount IS NULL OR valuation_as_of IS NULL)::text AS "invalidCount",
      COUNT(*) FILTER (WHERE valuation_as_of<now()-interval '24 hours' OR valuation_as_of>now()+interval '5 minutes')::text AS "staleCount",
      COUNT(*) FILTER (WHERE valuation_currency IS DISTINCT FROM 'KES')::text AS "otherCurrencyCount"
      FROM wealth_portfolio.holdings
-     WHERE tenant_id=$1 AND source_system=ANY($2::text[])`,[tenantId,access.allowed]);
+     WHERE tenant_id=$1 AND source_active=true AND source_system=ANY($2::text[])`,[tenantId,access.allowed]);
    if(Number(coverage.rows[0].invalidCount)>0)reasons.push('Asset valuation evidence is unverified or missing');
    if(Number(coverage.rows[0].staleCount)>0)reasons.push('One or more holdings have stale valuations');
    if(Number(coverage.rows[0].otherCurrencyCount)>0)reasons.push('Cross-currency holdings lack authoritative KES FX conversion');
@@ -97,7 +97,7 @@ export function registerProjectionRoutes(app:FastifyInstance,pool:Pool,t:B1Tools
    // All required sources have reconciled completeness and consent. NUMERIC stays in SQL, never JS floats.
    const sums=await ctx.client.query<{grossAssets:string;liabilities:string;netWorth:string}>(`
     WITH assets AS (SELECT COALESCE(SUM(valuation_amount*owner_fraction),0) AS total
-       FROM wealth_portfolio.holdings WHERE tenant_id=$1),
+       FROM wealth_portfolio.holdings WHERE tenant_id=$1 AND source_active=true),
     obligations AS (SELECT COALESCE(SUM(outstanding_amount),0) AS total
        FROM wealth_portfolio.liability_projections WHERE tenant_id=$1)
     SELECT assets.total::text AS "grossAssets",obligations.total::text AS liabilities,

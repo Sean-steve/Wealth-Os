@@ -44,3 +44,7 @@ New backend under `apps/api/` with tenant-scoped PostgreSQL, first durable Wealt
 ## Backend Phase B1 — Durable Wealth Planning & Guarded Live Workspace
 
 PostgreSQL milestone/strategy lifecycle, finance-source-guarded capital proposals, consent-gated read-only portfolio/income/liability projections, and completeness-gated wealth-state aggregation are under `apps/api/src/b1/`. The **Connected Workspace** is a separate OIDC/PKCE-secured frontend route and is *unconfigured* on public GitHub Pages by default. Other screens remain fictional demos. See `docs/PHASE_B1.md` for integration details, policy setup, testing and limitations.
+
+## Phase B2 — Kernel-Bound Identity, Source Gateway & Unified Navigation
+
+B2 requires verified issuer+subject identity bindings for every authenticated tenant operation; a distinct signed service OIDC source token and restricted ingestion database account for replay-safe, consented Finance/Asset/Company snapshots; and an explicit **Sample / Connected Authority** switch across all navigation routes. The source repositories have no verified live publisher endpoints/production identity; **do not treat this as a live wealth integration**. Read `docs/PHASE_B2.md` and `apps/api/contracts/hos-external-engine.manifest.json` for identity provisioning, domain boundaries and activation gates.

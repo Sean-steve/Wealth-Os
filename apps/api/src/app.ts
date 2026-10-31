@@ -12,8 +12,11 @@ import {tenantHeader,profileInput,createGoalInput,updateGoalInput,uuid,etagFor,e
 import {registerPlanningRoutes} from './b1/planningRoutes.js';
 import {registerCapitalRoutes} from './b1/capitalRoutes.js';
 import {registerProjectionRoutes} from './b1/projectionRoutes.js';
+import {registerSourceRoutes} from './b2/ingestion.js';
+import type {SourceServices} from './b2/ingestion.js';
+import {registerSourceStatusRoutes} from './b2/sourceStatus.js';
 
-export interface AppDeps {pool:Pool;verifyBearer:VerifyBearer;allowedOrigins?:readonly string[]}
+export interface AppDeps {pool:Pool;verifyBearer:VerifyBearer;allowedOrigins?:readonly string[];sourceServices?:SourceServices}
 type AuthRequest=FastifyRequest & {principal?:Principal;wealthTenantId?:string};
 type HttpResult={status:number;body:Record<string,unknown>;headers?:Record<string,string>};
 const profileSelect=`SELECT tenant_id AS "tenantId",base_currency AS "baseCurrency",
@@ -83,7 +86,7 @@ async function idempotent(ctx:TenantContext,request:FastifyRequest,body:unknown,
 }
 const pageQuery=z.object({limit:z.coerce.number().int().min(1).max(50).default(20),cursor:z.string().max(300).optional()}).strict();
 
-export function createApp({pool,verifyBearer,allowedOrigins=[]}:AppDeps):FastifyInstance{
+export function createApp({pool,verifyBearer,allowedOrigins=[],sourceServices={}}:AppDeps):FastifyInstance{
  const app=Fastify({bodyLimit:128*1024,genReqId:()=>randomUUID(),logger:false,trustProxy:false});
  app.addHook('onRequest',async(request,reply)=>{
   const origin=request.headers.origin;
@@ -124,8 +127,8 @@ export function createApp({pool,verifyBearer,allowedOrigins=[]}:AppDeps):Fastify
  app.get('/api/v1/wealth/capabilities',async request=>{
   const {principal,tenantId}=authFor(request);
   return withTenant(pool,principal,tenantId,async()=>({
-   stage:'B1',mode:'durable-planning-and-consent-gated-projections',
-   modules:{profile:'durable',goals:'durable',milestones:'durable',strategies:'durable',capitalProposals:'durable-planning-only',portfolio:'consent-gated-read-only',income:'consent-gated-read-only',liabilities:'consent-gated-read-only',wealthState:'source-reconciliation-gated',forecast:'contract-only',execution:'disabled'},
+   stage:'B2',mode:'trusted-snapshot-gateway-and-authority-unified-ux',
+   modules:{profile:'durable',goals:'durable',milestones:'durable',strategies:'durable',capitalProposals:'durable-planning-only',portfolio:'consent-gated-read-only',income:'consent-gated-read-only',liabilities:'consent-gated-read-only',wealthState:'source-reconciliation-gated',forecast:'contract-only',sourceGateway:'signed-service-snapshot-contract',sourceIngestion:sourceServices.pool&&sourceServices.verifyProducer?'enabled':'unconfigured',execution:'disabled'},
    connectedSourceSystems:[],financialExecutionEnabled:false,frontendConnected:'configured-per-environment'
   }));
  });
@@ -248,5 +251,7 @@ export function createApp({pool,verifyBearer,allowedOrigins=[]}:AppDeps):Fastify
  registerPlanningRoutes(app,pool,tools);
  registerCapitalRoutes(app,pool,tools);
  registerProjectionRoutes(app,pool,tools);
+ registerSourceStatusRoutes(app,pool,tools);
+ registerSourceRoutes(app,sourceServices);
  return app;
 }

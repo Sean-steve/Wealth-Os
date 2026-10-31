@@ -7,3 +7,13 @@ BEGIN
  END IF;
 END $$;
 GRANT CONNECT ON DATABASE wealth_os TO wealth_app;
+
+-- Separate integration role has no rights to modify Wealth-owned planning goals.
+DO $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wealth_ingest') THEN
+  CREATE ROLE wealth_ingest LOGIN PASSWORD 'local_dev_only_ingest_password'
+    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+ END IF;
+END $$;
+GRANT CONNECT ON DATABASE wealth_os TO wealth_ingest;

@@ -17,6 +17,10 @@ export function loadConfig(env:NodeJS.ProcessEnv=process.env):ApiConfig {
   throw new Error('Wealth OS API is not configured: require DB URL and trusted HTTPS OIDC issuer, audience, JWKS URL.');
  }
  const config=result.data;
+ if(new URL(config.OIDC_ISSUER).origin!==new URL(config.OIDC_JWKS_URL).origin)throw new Error('User OIDC issuer/JWKS must share a pinned origin.');
+ if(config.INTEGRATION_OIDC_ISSUER&&config.INTEGRATION_OIDC_JWKS_URL&&
+ new URL(config.INTEGRATION_OIDC_ISSUER).origin!==new URL(config.INTEGRATION_OIDC_JWKS_URL).origin)
+ throw new Error('Source OIDC issuer/JWKS must share a pinned origin.');
  if(new URL(config.OIDC_ISSUER).username||new URL(config.OIDC_JWKS_URL).username){
   throw new Error('OIDC URLs must not embed authentication credentials.');
  }

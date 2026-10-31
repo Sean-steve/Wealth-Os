@@ -10,4 +10,7 @@ try {
   await pool.query("CREATE ROLE wealth_app LOGIN PASSWORD 'local_ci_app_only' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS");
  }
  await pool.query('GRANT CONNECT ON DATABASE wealth_os_ci TO wealth_app');
+ const ingest=await pool.query("SELECT 1 FROM pg_roles WHERE rolname='wealth_ingest'");
+ if(!ingest.rowCount)await pool.query("CREATE ROLE wealth_ingest LOGIN PASSWORD 'local_ci_ingest_only' NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS");
+ await pool.query('GRANT CONNECT ON DATABASE wealth_os_ci TO wealth_ingest');
 }finally{await pool.end()}

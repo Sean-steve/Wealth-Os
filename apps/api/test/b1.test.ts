@@ -33,6 +33,15 @@ describeDb('B1 real PostgreSQL durable wealth domains and consent boundaries',()
   await admin.query(`INSERT INTO wealth_auth.tenant_memberships(tenant_id,subject_id,role)
    VALUES ($1,$2,'OWNER'),($1,$3,'VIEWER'),($4,$5,'OWNER')`,
   [a,principal.owner.subject,principal.viewer.subject,b,principal.other.subject]);
+  for(const [tenant,subject,issuer] of [
+   [a,principal.owner.subject,principal.owner.issuer],
+   [a,principal.viewer.subject,principal.viewer.issuer],
+   [b,principal.other.subject,principal.other.issuer]
+  ]){
+   await admin.query(`INSERT INTO wealth_auth.identity_bindings
+    (tenant_id,issuer,subject_id,kernel_person_ref,proof_reference,verified_at)
+    VALUES($1,$2,$3,$4,$5,now())`,[tenant,issuer,subject,'person:ci:'+subject,'ci-verified-binding']);
+  }
   api=createApp({pool:db,verifyBearer:async token=>{
    if(!principal[token])fail(401,'INVALID_TOKEN','Invalid access token');
    return principal[token];
@@ -184,11 +193,11 @@ describeDb('B1 real PostgreSQL durable wealth domains and consent boundaries',()
  it('requires valid subject consents and complete, fresh source watermarks before reporting a net-worth projection',async()=>{
   // CI's privileged migrator represents a future trusted source adapter; no public ingestion route exists.
   await admin.query(`INSERT INTO wealth_portfolio.holdings
-   (tenant_id,source_system,source_entity_type,source_entity_id,category,owner_fraction,
+   (tenant_id,source_system,source_entity_type,source_entity_id,canonical_asset_ref,category,owner_fraction,
     valuation_amount,valuation_currency,valuation_as_of,valuation_method,source_version,quality_status)
-   VALUES($1,'Asset OS','asset','property-123','PROPERTY',0.5,1000000,'KES',now(),'broker-comparable','v1','VERIFIED'),
-         ($1,'Finance OS','account','cash-123','CASH',1,100000,'KES',now(),'reconciled','v1','VERIFIED'),
-         ($2,'Asset OS','asset','other-tenant','PROPERTY',1,90000000,'KES',now(),'external','v1','VERIFIED')`,[a,b]);
+   VALUES($1,'Asset OS','asset','property-123','asset:property-123','PROPERTY',0.5,1000000,'KES',now(),'broker-comparable','v1','VERIFIED'),
+         ($1,'Finance OS','account','cash-123','finance:cash-123','CASH',1,100000,'KES',now(),'reconciled','v1','VERIFIED'),
+         ($2,'Asset OS','asset','other-tenant','asset:other-tenant','PROPERTY',1,90000000,'KES',now(),'external','v1','VERIFIED')`,[a,b]);
   await admin.query(`INSERT INTO wealth_portfolio.liability_projections
    (tenant_id,source_system,source_entity_id,outstanding_amount,currency,source_as_of,provenance)
    VALUES($1,'Finance OS','loan-123',200000,'KES',now(),'{}'::jsonb)`,[a]);

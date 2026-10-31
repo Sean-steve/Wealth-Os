@@ -35,6 +35,14 @@ describeDb('B0 live PostgreSQL REST, tenant isolation and audit certification',(
   await admin.query(`INSERT INTO wealth_auth.tenant_memberships(tenant_id,subject_id,role)
   VALUES ($1,$2,'OWNER'),($1,$3,'VIEWER'),($4,$5,'OWNER'),($4,$6,'VIEWER')`,[
    tenantA,users.owner.subject,users.viewer.subject,tenantB,users.other.subject,users.readonly.subject]);
+  for(const [tenant,subject,issuer] of [
+   [tenantA,users.owner.subject,users.owner.issuer],[tenantA,users.viewer.subject,users.viewer.issuer],
+   [tenantB,users.other.subject,users.other.issuer],[tenantB,users.readonly.subject,users.readonly.issuer]
+  ]){
+   await admin.query(`INSERT INTO wealth_auth.identity_bindings
+    (tenant_id,issuer,subject_id,kernel_person_ref,proof_reference,verified_at)
+    VALUES($1,$2,$3,$4,$5,now())`,[tenant,issuer,subject,'person:ci:'+subject,'ci-owner-binding-proof']);
+  }
   api=createApp({pool:db,verifyBearer:async token=>{
    if(!users[token])fail(401,'INVALID_TOKEN','Invalid access token.');
    return users[token];

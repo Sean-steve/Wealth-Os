@@ -5,6 +5,13 @@ import {apiRequest,completeLogin,isUuid,makeLoginUrl,readConnectionConfig,scrubA
 import type {ConnectionConfig,Session} from './api';
 import {Alert,Badge,Button,Card,ErrorNote,Field,Stat} from '../phase3/ui';
 type Read<T>={data:T};
+type SourceStatus={sourceSystem:string;consented:boolean;authorizedProducerBound:boolean;
+ status:string;sourceAsOf:string|null;sourceRevision:string|null};
+const mappedRoutes:Record<string,Tab>={
+ connected:'overview',dashboard:'overview','net-worth':'overview',goals:'goals',
+ strategies:'strategies',capital:'capital',portfolio:'portfolio',income:'income',
+ liabilities:'liabilities'
+};
 type Goal={id:string;title:string;metric:string;targetAmount:string;targetDate:string;priority:string;status:string;version:string};
 type Milestone={id:string;goalId:string;title:string;targetAmount:string;dueDate:string;status:string;version:string};
 type Strategy={id:string;goalId:string;name:string;thesis:string;latestVersion:number;activeVersion:number|null;status:string;
@@ -16,7 +23,7 @@ type Income={id:string;sourceSystem:string;monthlyAmount:string;currency:string;
 type Debt={id:string;sourceSystem:string;outstandingAmount:string;currency:string;sourceAsOf:string};
 type State={status:string;currency:string;netWorth:string|null;grossAssets:string|null;liabilities:string|null;blockers:string[];financialExecutionEnabled:false;sourceWatermarks:unknown[];holdingCount:number};
 type Profile={baseCurrency:string;wealthStage:string;strategyNote:string;version:string};
-type Snapshot={profile:Profile|null;goals:Goal[];strategies:Strategy[];pools:Pool[];proposals:Proposal[];holdings:Holding[];incomes:Income[];debts:Debt[];state:State};
+type Snapshot={profile:Profile|null;goals:Goal[];strategies:Strategy[];pools:Pool[];proposals:Proposal[];holdings:Holding[];incomes:Income[];debts:Debt[];state:State;sources:SourceStatus[]};
 type Tab='overview'|'goals'|'strategies'|'capital'|'portfolio'|'income'|'liabilities';
 const tabs:{id:Tab;title:string}[]=[
  {id:'overview',title:'Overview'},{id:'goals',title:'Goals & milestones'},{id:'strategies',title:'Strategies'},
@@ -32,14 +39,15 @@ const configFromBuild=():ConnectionConfig|null=>readConnectionConfig({
  VITE_WEALTH_OIDC_TOKEN_URL:import.meta.env.VITE_WEALTH_OIDC_TOKEN_URL,
  VITE_WEALTH_OIDC_CLIENT_ID:import.meta.env.VITE_WEALTH_OIDC_CLIENT_ID
 });
-export function ConnectedWorkspace(){
+export function ConnectedWorkspace({route='connected'}:{route?:string}){
  const [configResult]=useState<{config:ConnectionConfig|null;error:string}>(()=>{
   try{return {config:configFromBuild(),error:''}}catch(e){return {config:null,error:e instanceof Error?e.message:'Invalid OIDC connection setup.'}}
  });
  const config=configResult.config;
  const [session,setSession]=useState<Session|null>(null);
  const [tenantId,setTenantId]=useState('');
- const [tab,setTab]=useState<Tab>('overview');
+ const [tab,setTab]=useState<Tab>(mappedRoutes[route]??'overview');
+ useEffect(()=>{if(mappedRoutes[route])setTab(mappedRoutes[route])},[route]);
  const [records,setRecords]=useState<Snapshot|null>(null);
  const [milestones,setMilestones]=useState<Milestone[]>([]);
  const [milestoneGoal,setMilestoneGoal]=useState('');
@@ -75,7 +83,7 @@ export function ConnectedWorkspace(){
   setError('');setLoading(true);
   try{
    const fetcher=<T,>(path:string)=>apiRequest<T>(config,currentSession,requestedTenant,path);
-   const [profile,goals,strategies,pools,proposals,holdings,incomes,debts,state]=await Promise.all([
+   const [profile,goals,strategies,pools,proposals,holdings,incomes,debts,state,sources]=await Promise.all([
     fetcher<Read<Profile>>('/api/v1/wealth/profile').then(r=>r.data).catch(e=>{if(e.status===404)return null;throw e}),
     fetcher<Read<Goal[]>>('/api/v1/wealth/goals?limit=50').then(r=>r.data),
     fetcher<Read<Strategy[]>>('/api/v1/wealth/strategies').then(r=>r.data),
@@ -84,9 +92,10 @@ export function ConnectedWorkspace(){
     fetcher<Read<Holding[]>>('/api/v1/wealth/portfolio/holdings').then(r=>r.data),
     fetcher<Read<Income[]>>('/api/v1/wealth/income').then(r=>r.data),
     fetcher<Read<Debt[]>>('/api/v1/wealth/liabilities').then(r=>r.data),
-    fetcher<Read<State>>('/api/v1/wealth/state').then(r=>r.data)
+    fetcher<Read<State>>('/api/v1/wealth/state').then(r=>r.data),
+    fetcher<Read<SourceStatus[]>>('/api/v1/wealth/sources/status').then(r=>r.data)
    ]);
-   setRecords({profile,goals,strategies,pools,proposals,holdings,incomes,debts,state});
+   setRecords({profile,goals,strategies,pools,proposals,holdings,incomes,debts,state,sources});
    setStage(profile?.wealthStage??'BUILDING');
    setStrategyNote(profile?.strategyNote??'');
    setNotice('Fetched current tenant-scoped PostgreSQL records. No sample values were imported.');
@@ -125,7 +134,8 @@ export function ConnectedWorkspace(){
  return <div className="wos-screen cw-page">
  <div className="wos-page-head"><div><span className="wos-eyebrow">WEALTH OS / AUTHENTICATED SERVER WORKSPACE</span>
  <h1>Connected Wealth Workspace</h1><p>Securely read and manage Wealth-owned planning records. Isolated from fictional sample figures and localStorage.</p></div></div>
- <Alert><strong>Connection boundary:</strong> Wealth OS cannot create Finance OS transactions, holdings, bank accounts, valuations or verified net worth. No demo data is imported. A real OIDC issuer, API host, membership and source consents are prerequisites.</Alert>
+ <Alert><strong>Data authority:</strong> {mappedRoutes[route]?'Connected mode reads signed, consent-scoped projections and durable Wealth records only.':'This module is not yet supported by authoritative backend APIs.'} No demo figures or fabricated wealth scores are shown here. A real OIDC issuer, API host, verified Kernel binding and source credentials are prerequisites.</Alert>
+ {!mappedRoutes[route]&&<Card title="This module is not yet server-backed" subtitle="No simulated returns, forecasts, reports or artificial recommendations in authenticated mode."><p className="cw-copy">This route is available in the fictional sample workspace only. The authenticated backend cannot currently provide evidence-complete {route} records. Select a supported module (Goals, Strategies, Capital, Portfolio, Income, Liabilities, Net Worth) or switch back to the clearly labeled sample workspace.</p></Card>}
  {!config&&<Card title="Server connection not configured" subtitle="This is expected on the public GitHub Pages demo.">
  <p className="cw-copy">Phase B1 REST services are committed and PostgreSQL-certified, but no real backend or trusted identity provider is deployed for this static site. Set the four build-time <code>VITE_WEALTH_*</code> variables for your own trusted environment, provision a tenant, configure CORS and redeploy the frontend to activate this screen. Do not paste tokens into the sample UI.</p>
  <div className="p5-boundary"><CloudOff size={17}/><span>{configResult.error||'No authenticated connection is available. Existing sample screens continue to work entirely offline.'}</span></div></Card>}
@@ -134,7 +144,7 @@ export function ConnectedWorkspace(){
  {authed&&<Card title="Select provisioned tenant" subtitle="The server independently checks membership and scopes. A tenant UUID alone grants no access.">
  <div className="cw-tenant-row"><Field title="Wealth OS tenant UUID"><input value={tenantId} onChange={e=>{setTenantId(e.target.value);setRecords(null);setMilestones([])}} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autoComplete="off"/></Field>
  <Button disabled={loading||!isUuid(tenantId)} onClick={()=>{void load()}}><RefreshCcw size={14}/>{loading?'Loading…':'Load verified workspace'}</Button></div></Card>}
- {authed&&records&&<><div className="wos-kpis">
+ {authed&&records&&!!mappedRoutes[route]&&<><div className="wos-kpis">
  <Stat title="Net worth" value={money(records.state.netWorth)} hint={records.state.status==='INCOMPLETE'?'Withheld: missing coverage':'KES · reconciled source projection'} icon={<WalletCards size={18}/>}/>
  <Stat title="Goals" value={String(records.goals.length)} hint="Durable PostgreSQL plans" icon={<CheckCircle2 size={18}/>} tone="teal"/>
  <Stat title="Source-backed holdings" value={String(records.holdings.length)} hint="Consent-gated, never editable here" icon={<Database size={18}/>} tone="blue"/>
@@ -147,6 +157,11 @@ export function ConnectedWorkspace(){
  <div className="p4-kv"><span>Liabilities</span><b>{money(records.state.liabilities)}</b></div>
  <div className="p4-kv"><span>Net worth</span><b>{money(records.state.netWorth)}</b></div>
  <h3 className="p4-subhead">Evidence blockers</h3>{records.state.blockers.length?records.state.blockers.map(x=><div key={x} className="cw-blocker"><ShieldAlert size={15}/>{x}</div>):<p className="cw-copy">Required evidence is complete in this tenant snapshot; figures are still financial projections, not audits.</p>}
+ <h3 className="p4-subhead">Source authority and consent</h3>
+ {records.sources.map(x=><div className="cw-record" key={x.sourceSystem}>
+ <b>{x.sourceSystem} · {x.status}</b>
+ <span>{x.consented?'Consent active':'No read consent'} · {x.authorizedProducerBound?'Service identity bound':'No approved producer'}
+ {x.sourceAsOf?' · as of '+x.sourceAsOf.slice(0,10):''}</span></div>)}
  </Card><Card title="Wealth-owned profile" subtitle="Real durable profile; no fake personal information">
  <form className="wos-form" onSubmit={e=>{void updateProfile(e)}}>
  <Field title="Wealth stage"><select value={stage} onChange={e=>setStage(e.target.value)}>{['BUILDING','GROWING','PROTECTING','INDEPENDENT','LEGACY'].map(x=><option key={x}>{x}</option>)}</select></Field>

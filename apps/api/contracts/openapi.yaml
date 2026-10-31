@@ -1,11 +1,9 @@
 openapi: 3.1.0
 info:
   title: Wealth OS B0 REST Contracts
-  version: 0.1.0-b0
+  version: 0.3.0-b2
   description: >
-    Real PostgreSQL persistence for Wealth-owned profile and goal records.
-    Other wealth APIs remain explicitly not implemented. No bank execution
-    or cross-OS connection exists. Financial data must not be treated as verified.
+    Tenant-isolated Wealth-owned strategic records, signed source snapshot ingestion and subject-scoped financial projections. No live providers or identity are deployed by this repository; real source activation requires externally verified publishers and consent.
 servers:
   - url: http://127.0.0.1:3009
 security:
@@ -16,6 +14,16 @@ tags:
   - name: Goals
 components:
   securitySchemes:
+    SourceServiceJwt:
+      type: oauth2
+      description: >
+        Pinned service-only OIDC access token with dedicated wealth-os-source-ingest
+        audience and wealth:ingest scope. This is not a browser client credential.
+      flows:
+        clientCredentials:
+          tokenUrl: https://issuer.example.test/token
+          scopes:
+            wealth:ingest: Submit reconciled source snapshots
     OidcAccessToken:
       type: oauth2
       description: >
@@ -175,6 +183,91 @@ components:
             riskTolerance: {enum: [CONSERVATIVE,BALANCED,GROWTH]}
             horizonYears: {type: integer, minimum: 1, maximum: 60}
             assumedAnnualReturnPct: {type: number, minimum: -50, maximum: 50}
+    B2SourceSnapshot:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion,eventId,sourceSystem,sourceRevision,asOf,personRef,complete,
+        completenessEvidence]
+      properties:
+        schemaVersion: {const: 1}
+        eventId: {type: string, format: uuid}
+        sourceSystem: {enum: ['Finance OS','Asset OS','Company OS']}
+        sourceRevision: {type: string, minLength: 1, maxLength: 150}
+        asOf: {type: string, format: date-time}
+        personRef: {type: string, minLength: 3, maxLength: 180}
+        complete: {const: true}
+        completenessEvidence:
+          type: object
+          required: [coverage,sourceRecordCount,attestation]
+          additionalProperties: false
+          properties:
+            coverage: {const: ALL}
+            sourceRecordCount: {type: integer, minimum: 0}
+            attestation: {type: string, minLength: 15, maxLength: 500}
+        holdings:
+          type: array
+          maxItems: 250
+          items:
+            type: object
+            additionalProperties: false
+            required: [sourceEntityType,sourceEntityId,canonicalAssetRef,category,ownerFraction,
+              valuationAmount,valuationCurrency,valuationAsOf,valuationMethod,sourceVersion,
+              qualityStatus,provenance]
+            properties:
+              sourceEntityType: {type: string}
+              sourceEntityId: {type: string}
+              canonicalAssetRef: {type: string}
+              category: {enum: [BUSINESS_EQUITY,PROPERTY,INVESTMENTS,CASH,OTHER]}
+              ownerFraction: {type: string, description: Decimal between 0 exclusive and 1 inclusive, six places maximum}
+              valuationAmount: {type: string, description: KES decimal, four places maximum}
+              valuationCurrency: {const: KES}
+              valuationAsOf: {type: string, format: date-time}
+              valuationMethod: {type: string}
+              sourceVersion: {type: string}
+              qualityStatus: {enum: [VERIFIED,ESTIMATED,STALE,UNVERIFIED]}
+              provenance: {type: object, description: Evidence only; limited to twelve primitive fields}
+        incomes:
+          type: array
+          maxItems: 250
+          items:
+            type: object
+            required: [sourceEntityId,monthlyAmount,currency,passive,sourceAsOf,provenance]
+            additionalProperties: false
+            properties:
+              sourceEntityId: {type: string}
+              monthlyAmount: {type: string}
+              currency: {const: KES}
+              passive: {type: boolean}
+              sourceAsOf: {type: string, format: date-time}
+              provenance: {type: object}
+        liabilities:
+          type: array
+          maxItems: 250
+          items:
+            type: object
+            required: [sourceEntityId,outstandingAmount,currency,sourceAsOf,provenance]
+            additionalProperties: false
+            properties:
+              sourceEntityId: {type: string}
+              outstandingAmount: {type: string}
+              currency: {const: KES}
+              sourceAsOf: {type: string, format: date-time}
+              provenance: {type: object}
+        capitalPools:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            required: [sourceEntityRef,name,purpose,classifiedCash,reservedCash,committedCash,sourceAsOf]
+            additionalProperties: false
+            properties:
+              sourceEntityRef: {type: string}
+              name: {type: string}
+              purpose: {type: string}
+              classifiedCash: {type: string}
+              reservedCash: {type: string}
+              committedCash: {type: string}
+              sourceAsOf: {type: string, format: date-time}
 paths:
   /health:
     get:
@@ -486,3 +579,64 @@ paths:
                       liabilities: {type: [string, 'null']}
                       blockers: {type: array, items: {type: string}}
                       financialExecutionEnabled: {const: false}
+
+  /api/v1/wealth/sources/status:
+    get:
+      summary: Effective per-subject source consent, approved producer binding and snapshot freshness
+      tags: [Platform]
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200':
+          description: Subject-scoped source status; never exposes unconsented source data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [sourceSystem,consented,authorizedProducerBound,status]
+                      properties:
+                        sourceSystem: {enum: ['Finance OS','Asset OS','Company OS']}
+                        consented: {type: boolean}
+                        authorizedProducerBound: {type: boolean}
+                        status: {enum: [CONSENT_REQUIRED,PRODUCER_NOT_BOUND,AWAITING_SNAPSHOT,STALE,CURRENT]}
+                        sourceAsOf: {type: [string,'null']}
+                        sourceRevision: {type: [string,'null']}
+        '403': {description: Token subject lacks verified issuer-bound Kernel identity and tenant membership}
+  /api/v1/integrations/sources/{source}/snapshots:
+    post:
+      summary: Source-authoritative complete snapshot with producer signature and revocable consent
+      tags: [Platform]
+      description: >
+        SERVER-TO-SERVER ONLY. Requires a short-lived signed OIDC SERVICE JWT with
+        wealth:ingest scope and a separately configured integration issuer/audience/JWKS.
+        The producer subject, issuer, source and person reference must match the
+        administrator-provisioned source_grants record. Missing person consent,
+        inactive Kernel binding, stale source, cross-source duplicate canonical assets,
+        changed replays and out-of-order revisions fail closed.
+        Wealth OS never executes financial transfers or changes an external source.
+      security:
+        - SourceServiceJwt: [wealth:ingest]
+      parameters:
+        - name: source
+          in: path
+          required: true
+          schema: {enum: [finance,asset,company]}
+        - {$ref: '#/components/parameters/Tenant'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/B2SourceSnapshot'}
+      responses:
+        '201': {description: Applied atomically (with receipt, audit and pending outbox)}
+        '200': {description: Exact duplicate replay, no writes}
+        '400': {description: Invalid source schema or incomplete attestation}
+        '401': {description: Missing, invalid or expired service identity}
+        '403': {description: Unbound source service, revoked person consent, wrong person reference or browser request}
+        '409': {description: Conflicting replay, out-of-order source revision or duplicate canonical economic asset}
+        '422': {description: Stale source or source authority mismatch}
+        '503': {description: Integration issuer or restricted ingestion account unconfigured}

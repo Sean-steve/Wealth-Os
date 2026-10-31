@@ -22,6 +22,11 @@ export async function withTenant<T>(pool:Pool,principal:Principal,tenantId:strin
   );
   if(m.rowCount!==1)fail(403,'TENANT_ACCESS_DENIED','No active membership for the requested tenant.');
   await client.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);
+  // Kernel-origin subject proof is mandatory. Never derive an identity from a bare tenant header.
+  const bound=await client.query<{kernel_person_ref:string}>(`SELECT kernel_person_ref FROM wealth_auth.identity_bindings
+   WHERE tenant_id=$1 AND issuer=$2 AND subject_id=$3 AND state='ACTIVE' AND revoked_at IS NULL`,
+   [tenantId,principal.issuer,principal.subject]);
+  if(bound.rowCount!==1)fail(403,'KERNEL_IDENTITY_UNBOUND','The verified OIDC subject is not actively bound to a Personal Kernel person in this tenant.');
   const result=await fn({client,tenantId,principal,role:m.rows[0].role});
   await client.query('COMMIT');began=false;
   return result;

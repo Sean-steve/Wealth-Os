@@ -1,20 +1,24 @@
 import {createApp} from './app.js';
 import {createPool,verifyRestrictedRole} from './db.js';
 import {createOidcVerifier} from './auth.js';
+import {createProducerVerifier} from './b2/sourceContracts.js';
 import {loadConfig} from './env.js';
 
 const config=loadConfig();
 const pool=createPool(config.WEALTH_APP_DATABASE_URL);
+const ingestionPool=config.WEALTH_INGEST_DATABASE_URL?createPool(config.WEALTH_INGEST_DATABASE_URL):undefined;
 try{
- await verifyRestrictedRole(pool); // Fail closed if a superuser/bypass-RLS connection is supplied.
- const app=createApp({pool,verifyBearer:createOidcVerifier(config),allowedOrigins:config.CORS_ALLOWED_ORIGINS.split(',').map(x=>x.trim()).filter(Boolean)});
- const shutdown=async()=>{await app.close();await pool.end()};
+ await verifyRestrictedRole(pool);
+ if(ingestionPool)await verifyRestrictedRole(ingestionPool); // Fail closed if a superuser/bypass-RLS connection is supplied.
+ const app=createApp({pool,verifyBearer:createOidcVerifier(config),allowedOrigins:config.CORS_ALLOWED_ORIGINS.split(',').map(x=>x.trim()).filter(Boolean),
+ sourceServices:{pool:ingestionPool,verifyProducer:createProducerVerifier(config)}});
+ const shutdown=async()=>{await app.close();await pool.end();await ingestionPool?.end()};
  process.once('SIGTERM',()=>{void shutdown()});
  process.once('SIGINT',()=>{void shutdown()});
  await app.listen({host:config.HOST,port:config.PORT});
  process.stdout.write('Wealth OS B0 API listening (authenticated tenant-scoped APIs only).\n');
 }catch(error){
- await pool.end();
+ await pool.end();await ingestionPool?.end();
  process.stderr.write('Wealth OS API startup failed: '+(error instanceof Error?error.message:'Unknown failure')+'\n');
  process.exitCode=1;
 }

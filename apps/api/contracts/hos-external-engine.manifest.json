@@ -1,0 +1,116 @@
+{
+  "manifest_version": 1,
+  "engine_id": "wealth-os",
+  "engine_type": "external",
+  "owner": "Wealth OS",
+  "lifecycle": "NOT_REGISTERED_WITH_PERSONAL_KERNEL",
+  "declared_capabilities": [
+    {
+      "id": "wealth.goals.list.v1",
+      "authority": "wealth_planning.goals",
+      "availability": "implemented REST; requires trusted subject/tenant binding"
+    },
+    {
+      "id": "wealth.strategy.propose.v1",
+      "authority": "wealth_planning.strategy_versions",
+      "availability": "implemented REST; planning only"
+    },
+    {
+      "id": "wealth.state.read.v1",
+      "authority": "consented source projections",
+      "availability": "implemented with fail-closed completeness gate"
+    }
+  ],
+  "requested_grants": [
+    {
+      "source": "Personal Kernel",
+      "permissions": [
+        "identity.subject.lookup",
+        "consent.active.read",
+        "engine.installation.verify"
+      ],
+      "status": "REQUIRES_REAL_KERNEL_REGISTRATION"
+    },
+    {
+      "source": "Finance OS",
+      "permissions": [
+        "read.reconciled.cash",
+        "read.liabilities",
+        "read.income"
+      ],
+      "status": "TRUSTED_SNAPSHOT_CONTRACT_ONLY"
+    },
+    {
+      "source": "Asset OS",
+      "permissions": [
+        "read.assets",
+        "read.ownership",
+        "read.valuations"
+      ],
+      "status": "TRUSTED_SNAPSHOT_CONTRACT_ONLY"
+    },
+    {
+      "source": "Company OS",
+      "permissions": [
+        "read.equity",
+        "read.distributions"
+      ],
+      "status": "CONTRACT_REQUIRES_PUBLISHER"
+    }
+  ],
+  "events_produced": [
+    "wealth.goal.created",
+    "wealth.goal.updated",
+    "wealth.strategy.drafted",
+    "wealth.strategy.revised",
+    "wealth.strategy.activated",
+    "wealth.source.snapshot_applied"
+  ],
+  "events_consumed": [
+    {
+      "type": "asset.valuation.accepted.v1",
+      "status": "INTENT_ONLY_TRANSPORT_NOT_CONNECTED"
+    },
+    {
+      "type": "asset.updated.v1",
+      "status": "INTENT_ONLY_TRANSPORT_NOT_CONNECTED"
+    },
+    {
+      "type": "finance.transaction.reconciled.v1",
+      "status": "INTENT_ONLY_TRANSPORT_NOT_CONNECTED"
+    },
+    {
+      "type": "kernel.subject.bound.v1",
+      "status": "INTENT_ONLY_TRANSPORT_NOT_CONNECTED"
+    }
+  ],
+  "forbidden": [
+    "bank transfers",
+    "transaction ledger writes",
+    "asset registry mutation",
+    "kernel identity issuance",
+    "global schedule overrides"
+  ],
+  "evidence": [
+    {
+      "repository": "Sean-steve/humankernelos",
+      "document": "docs/DOMAIN_OWNERSHIP.md",
+      "status": "platform contract reviewed; not runtime-installed"
+    },
+    {
+      "repository": "Sean-steve/Finance-Os",
+      "document": "backend/openapi/finance-os.v1.json",
+      "status": "code API contract reviewed; no Wealth snapshot publisher verified"
+    },
+    {
+      "repository": "Sean-steve/Asset-Os",
+      "document": "apps/api/openapi/events.json",
+      "status": "event type interface reviewed; delivery transport NOT_CONFIGURED"
+    },
+    {
+      "repository": "Company OS",
+      "document": null,
+      "status": "no verified publisher or repository endpoint in scoped reconciliation"
+    }
+  ]
+}

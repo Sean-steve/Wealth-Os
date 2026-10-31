@@ -1,4 +1,4 @@
-# DEVELOPMENT-ONLY PostgreSQL. Do not deploy this manifest or passwords to production.
+# DEVELOPMENT-ONLY PostgreSQL; creates isolated wealth_app and wealth_ingest roles. Do not deploy this manifest or passwords to production.
 services:
   db:
     image: postgres:16-alpine

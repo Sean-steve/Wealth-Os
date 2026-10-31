@@ -1,4 +1,4 @@
-name: Wealth OS B1 Domain Certification
+name: Wealth OS B2 Trust & Integration Certification
 on:
   push:
     branches: [main]
@@ -9,7 +9,7 @@ on:
 permissions:
   contents: read
 jobs:
-  backend-b1:
+  backend-b2:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -29,6 +29,7 @@ jobs:
     env:
       WEALTH_MIGRATOR_DATABASE_URL: postgresql://postgres:local_ci_postgres_only@127.0.0.1:5432/wealth_os_ci
       WEALTH_APP_DATABASE_URL: postgresql://wealth_app:local_ci_app_only@127.0.0.1:5432/wealth_os_ci
+      WEALTH_INGEST_DATABASE_URL: postgresql://wealth_ingest:local_ci_ingest_only@127.0.0.1:5432/wealth_os_ci
       CI: 'true'
     steps:
       - uses: actions/checkout@v4

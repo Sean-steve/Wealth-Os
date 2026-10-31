@@ -27,3 +27,8 @@
 .cw-foot{display:flex;gap:9px;color:#8d96a6;font-size:10.5px;align-items:center;line-height:1.6;margin:13px 0}
 .cw-foot svg{flex-shrink:0}
 @media(max-width:700px){.cw-auth{flex-direction:column;align-items:stretch;padding:14px}.cw-auth>.wos-action{align-self:flex-start}.cw-tenant-row{flex-direction:column;align-items:stretch}.cw-tenant-row>.wos-action{align-self:flex-start}.cw-tabs button{padding:10px 11px}}
+
+/* B2 global source-of-truth switch */
+.connection.cw-connected-mode{background:#e5f7ef;color:#237f62;box-shadow:inset 0 0 0 1px #bde8d3}
+.connection.cw-connected-mode i{background:#19a77f}
+.cw-mode-note{font-size:11px;color:#9aa5b5}

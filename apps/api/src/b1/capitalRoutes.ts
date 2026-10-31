@@ -36,7 +36,7 @@ export function registerCapitalRoutes(app:FastifyInstance,pool:Pool,t:B1Tools){
   return withTenant(pool,principal,tenantId,async ctx=>{
    if(!await hasFinanceConsent(ctx))return {data:[],missingConsent:'Finance OS',
     notice:'Finance OS read consent is required before cash classification details are available.'};
-   const r=await ctx.client.query(poolSelect+' WHERE tenant_id=$1 ORDER BY created_at,id LIMIT 200',[tenantId]);
+   const r=await ctx.client.query(poolSelect+' WHERE tenant_id=$1 AND source_active=true ORDER BY created_at,id LIMIT 200',[tenantId]);
    return {data:r.rows,missingConsent:null,
     notice:'Cash classifications only; the Finance OS is the authoritative balance owner.'};
   });
@@ -58,7 +58,7 @@ export function registerCapitalRoutes(app:FastifyInstance,pool:Pool,t:B1Tools){
     // Serialize proposal affordability checks without UPDATE privileges on Finance OS source classifications.
     await ctx.client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,31))',[tenantId+':'+input.poolId]);
     const r=await ctx.client.query<{id:string;version:string;freshSource:boolean;sourceEntityRef:string|null;sourceAsOf:Date|null;classifiedCash:string;reservedCash:string;committedCash:string;uncommittedCash:string}>(
-     poolSelect+' WHERE tenant_id=$1 AND id=$2',[tenantId,input.poolId]);
+     poolSelect+' WHERE tenant_id=$1 AND id=$2 AND source_active=true',[tenantId,input.poolId]);
     if(!r.rowCount)fail(404,'POOL_NOT_FOUND','Capital classification not found for this tenant.');
     const source=r.rows[0];
     if(Number(source.version)!==version)fail(409,'VERSION_CONFLICT','Finance-sourced capital data changed. Reload before creating an intent.');
@@ -79,7 +79,7 @@ export function registerCapitalRoutes(app:FastifyInstance,pool:Pool,t:B1Tools){
         $2::numeric<=p.classified_cash-p.reserved_cash-p.committed_cash-
          COALESCE((SELECT SUM(a.amount) FROM wealth_capital.allocation_proposals a
           WHERE a.tenant_id=p.tenant_id AND a.pool_id=p.id AND a.status IN ('DRAFT','UNDER_REVIEW','PLANNING_ACKNOWLEDGED')),0)) AS eligible
-       FROM wealth_capital.pools p WHERE p.tenant_id=$1 AND p.id=$4`,
+       FROM wealth_capital.pools p WHERE p.tenant_id=$1 AND p.id=$4 AND p.source_active=true`,
      [tenantId,input.amount,pct,input.poolId]);
     if(!r2.rowCount||!r2.rows[0].eligible)fail(422,'CAPITAL_GUARDRAIL','Requested planning amount exceeds policy ceiling or uncommitted, unproposed cash.');
     const id=randomUUID(),snapshot={

@@ -134,3 +134,17 @@ test('keyboard skip link and core screens meet automated critical accessibility 
   expect(significant.map(v=>({id:v.id,impact:v.impact,affected:v.nodes.length})),route+' accessibility issues').toEqual([]);
  }
 });
+
+test('connected authority mode never renders sample figures on supported or unsupported modules',async({page})=>{
+ await go(page,'connected');
+ await expect(page.getByRole('heading',{name:'Connected Wealth Workspace'})).toBeVisible();
+ await expect(page.getByText('Server connection not configured')).toBeVisible();
+ await page.getByRole('button',{name:'Goals & Milestones'}).click();
+ await expect(page.getByRole('heading',{name:'Connected Wealth Workspace'})).toBeVisible();
+ await expect(page.locator('main')).not.toContainText('KES 12.84M');
+ await page.getByRole('button',{name:'Wealth Forecasting'}).click();
+ await expect(page.getByText('This module is not yet server-backed')).toBeVisible();
+ await expect(page.locator('main')).not.toContainText('Illustrative annual return');
+ await page.getByRole('button',{name:'Switch to fictional sample workspace'}).click();
+ await expect(page.getByRole('heading',{name:'Command Center'})).toBeVisible();
+});
