@@ -19,7 +19,7 @@ test('all 22 routes render a navigable module without uncaught browser errors',a
  }
  expect(errors).toEqual([]);
  await page.goto(base+'#unknown-route');
- await expect(page.locator('main h1')).toContainText('Command Center');
+ await expect(page.locator('main h1')).toContainText('Connected Wealth Workspace');
 });
 
 test('goals persist across routes and reload; accessible dialogs restore keyboard focus',async({page})=>{
