@@ -122,6 +122,12 @@ describeDb('B1 real PostgreSQL durable wealth domains and consent boundaries',()
    (tenant_id,name,purpose,classified_cash,reserved_cash,committed_cash,source_entity_ref,source_as_of)
    VALUES($1,'Finance OS classified cash','Research capital',1000000,200000,100000,'finance:cash:123',now())
    RETURNING id`,[a]);poolId=pool.rows[0].id;
+  const noConsent=await api.inject({method:'GET',url:'/api/v1/wealth/capital/pools',headers:headers()});
+  expect(noConsent.statusCode).toBe(200);expect(noConsent.json().data).toEqual([]);
+  expect(noConsent.json().missingConsent).toBe('Finance OS');
+  await admin.query(`INSERT INTO wealth_auth.consent_grants(tenant_id,source_system,purpose,scopes,subject_id,effective_at)
+    VALUES($1,'Finance OS','Personal capital planning',ARRAY['wealth.read'],$2,now()-interval '1 minute')`,
+    [a,principal.owner.subject]);
   const list=await api.inject({method:'GET',url:'/api/v1/wealth/capital/pools',headers:headers()});
   expect(list.statusCode).toBe(200);expect(list.json().data[0].uncommittedCash).toBe('700000.0000');
   const payload={poolId,target:'Diversified fixed income',amount:'500000',rationale:'Research a hypothetical portfolio opportunity with a liquidity buffer.'};
@@ -166,7 +172,7 @@ describeDb('B1 real PostgreSQL durable wealth domains and consent boundaries',()
   const state=await api.inject({method:'GET',url:'/api/v1/wealth/state',headers:headers()});
   expect(state.statusCode).toBe(200);expect(state.json().data.status).toBe('INCOMPLETE');
   expect(state.json().data.netWorth).toBeNull();
-  expect(state.json().data.blockers).toContain('Finance OS: missing subject-scoped read consent');
+  expect(state.json().data.blockers).toContain('Asset OS: missing subject-scoped read consent');
   const holdings=await api.inject({method:'GET',url:'/api/v1/wealth/portfolio/holdings',headers:headers()});
   expect(holdings.statusCode).toBe(200);expect(holdings.json().data).toEqual([]);
  });

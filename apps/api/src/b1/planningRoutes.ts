@@ -19,9 +19,13 @@ const strategySelect=`SELECT h.strategy_id AS id,h.tenant_id AS "tenantId",h.goa
 const detailVersion=`SELECT strategy_id AS id,version,goal_id AS "goalId",name,thesis,
 allocation_targets AS "allocationTargets",assumptions,status,created_at AS "createdAt"
 FROM wealth_planning.strategy_versions`;
+const toUnits=(decimal:string):bigint=>{
+ const [whole,fraction='']=decimal.split('.');
+ return BigInt(whole)*10000n+BigInt(fraction.padEnd(4,'0'));
+};
 const dateCheck=(due:string,goalDate:Date|string,amount:string,target:string)=>{
  if(due>String(goalDate).slice(0,10))fail(422,'MILESTONE_BEYOND_GOAL','Milestone date must be on or before the goal target date.');
- if(Number(amount)>Number(target))fail(422,'MILESTONE_EXCEEDS_GOAL','Milestone amount must not exceed the goal target.');
+ if(toUnits(amount)>toUnits(target))fail(422,'MILESTONE_EXCEEDS_GOAL','Milestone amount must not exceed the goal target.');
 };
 const forGoal=(request:{params:unknown})=>uuid.parse((request.params as {id:string}).id);
 export function registerPlanningRoutes(app:FastifyInstance,pool:Pool,t:B1Tools){

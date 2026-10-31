@@ -2,6 +2,7 @@ import type {FastifyInstance} from 'fastify';
 import type {Pool} from 'pg';
 import {randomUUID} from 'node:crypto';
 import {withTenant,requireMemberWrite} from '../db.js';
+import type {TenantContext} from '../db.js';
 import {etagFor,expectedVersion,uuid} from '../contracts.js';
 import {proposalInput} from '../domainContracts.js';
 import {fail} from '../errors.js';
@@ -21,12 +22,23 @@ const proposalSelect=`SELECT id,tenant_id AS "tenantId",pool_id AS "poolId",targ
  evidence_snapshot AS "evidenceSnapshot",created_at AS "createdAt",updated_at AS "updatedAt"
  FROM wealth_capital.allocation_proposals`;
 
+async function hasFinanceConsent(ctx:TenantContext):Promise<boolean>{
+ const r=await ctx.client.query(`SELECT 1 FROM wealth_auth.consent_grants
+  WHERE tenant_id=$1 AND subject_id=$2 AND source_system='Finance OS'
+  AND 'wealth.read'=ANY(scopes) AND revoked_at IS NULL
+  AND effective_at<=now() AND (expires_at IS NULL OR expires_at>now()) LIMIT 1`,
+ [ctx.tenantId,ctx.principal.subject]);
+ return !!r.rowCount;
+}
 export function registerCapitalRoutes(app:FastifyInstance,pool:Pool,t:B1Tools){
  app.get('/api/v1/wealth/capital/pools',async request=>{
   const {principal,tenantId}=t.authFor(request);
-  return withTenant(pool,principal,tenantId,async ({client})=>{
-   const r=await client.query(poolSelect+' WHERE tenant_id=$1 ORDER BY created_at,id LIMIT 200',[tenantId]);
-   return {data:r.rows,notice:'Cash classifications only; the Finance OS is the authoritative balance owner.'};
+  return withTenant(pool,principal,tenantId,async ctx=>{
+   if(!await hasFinanceConsent(ctx))return {data:[],missingConsent:'Finance OS',
+    notice:'Finance OS read consent is required before cash classification details are available.'};
+   const r=await ctx.client.query(poolSelect+' WHERE tenant_id=$1 ORDER BY created_at,id LIMIT 200',[tenantId]);
+   return {data:r.rows,missingConsent:null,
+    notice:'Cash classifications only; the Finance OS is the authoritative balance owner.'};
   });
  });
  app.get('/api/v1/wealth/capital/proposals',async request=>{
@@ -41,6 +53,7 @@ export function registerCapitalRoutes(app:FastifyInstance,pool:Pool,t:B1Tools){
   const version=expectedVersion(request.headers['if-match']);
   const response=await withTenant(pool,principal,tenantId,async ctx=>{
    requireMemberWrite(ctx.role,'GOAL');
+   if(!await hasFinanceConsent(ctx))fail(403,'CONSENT_REQUIRED','An active Finance OS wealth.read consent is required for this capital source.');
    return t.idempotent(ctx,request,{...input,version},async()=>{
     // Serialize proposal affordability checks without UPDATE privileges on Finance OS source classifications.
     await ctx.client.query('SELECT pg_advisory_xact_lock(hashtextextended($1,31))',[tenantId+':'+input.poolId]);
