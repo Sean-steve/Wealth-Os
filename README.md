@@ -9,7 +9,7 @@ Static React + TypeScript + Vite prototype using *illustrative KES sample data*.
 ### Local development
 
 ```bash
-npm ci
+npm install
 npm run dev
 npm run typecheck
 npm test
