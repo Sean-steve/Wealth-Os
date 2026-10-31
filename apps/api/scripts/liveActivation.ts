@@ -16,7 +16,7 @@ const checkedAt=new Date().toISOString(),steps:string[]=[];
 const safeFetch=async(url:string,init:RequestInit={})=>{
  const u=new URL(url);
  if(u.protocol!=='https:')throw Error('HTTPS required for live test.');
- const response=await fetch(u,{...init,redirect:'error',signal:AbortSignal.timeout(12000),cache:'no-store'});
+ const response=await fetch(u,{...init,redirect:'error',signal:AbortSignal.timeout(12000)});
  let body:Json={};
  try{body=await response.json() as Json}catch{ /* HTTP status still enforced */ }
  return {status:response.status,body};
