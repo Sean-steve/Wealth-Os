@@ -1,7 +1,6 @@
 import type {FastifyInstance} from 'fastify';
 import type {Pool} from 'pg';
 import {randomUUID} from 'node:crypto';
-import {z} from 'zod';
 import {withTenant,requireMemberWrite} from '../db.js';
 import {etagFor,expectedVersion,uuid} from '../contracts.js';
 import {fail} from '../errors.js';
