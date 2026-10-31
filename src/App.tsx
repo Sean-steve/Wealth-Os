@@ -5,7 +5,7 @@ import {
  LayoutDashboard, TrendingUp, WalletCards, BriefcaseBusiness, Target, TriangleAlert,
  Sparkles, ChartNoAxesCombined, Landmark, BrainCircuit, NotebookText, ShieldCheck,
  Search, Bell, ChevronDown, Menu as MenuIcon, X, ArrowUpRight, ArrowRight, Check,
- LockKeyhole, SlidersHorizontal, ArrowLeft, Info, CircleCheck, Clock3, ShieldAlert
+ LockKeyhole, ArrowLeft, Info, CircleCheck, Clock3, ShieldAlert
 } from 'lucide-react';
 import { menu, money, portfolio, goals, periodChanges, phaseDeliverables, series } from './data';
 import type { Period, Route } from './data';
