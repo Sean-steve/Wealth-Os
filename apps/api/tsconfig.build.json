@@ -10,7 +10,8 @@
   "include": [
     "src/**/*.ts",
     "scripts/migrate.ts",
-    "scripts/stagingPreflight.ts"
+    "scripts/stagingPreflight.ts",
+    "scripts/liveActivation.ts"
   ],
   "exclude": [
     "src/**/*.test.ts",

@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: wealth-os-staging
   cancel-in-progress: false
@@ -15,6 +16,28 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify reviewed main commit and three independent release gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "$main_sha" != "$GITHUB_SHA" ]]; then
+            echo 'BLOCKED: staging deploy requires the CURRENT reviewed main commit'; exit 2
+          fi
+          runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$GITHUB_SHA&per_page=100")"
+          for required in \
+            'Wealth OS B3 Staging & Source Evidence Certification' \
+            'Wealth OS B3 — Real Keycloak Protocol Certification (CI only)' \
+            'Deploy Wealth OS to GitHub Pages'; do
+            if ! jq -e --arg name "$required" \
+              '.workflow_runs | any(.[]; .name == $name and .head_sha == env.GITHUB_SHA and .conclusion == "success")' \
+              <<<"$runs" >/dev/null; then
+              echo "BLOCKED: required successful release gate missing: $required"; exit 2
+            fi
+          done
+          echo 'Three independently green release gates confirmed for reviewed main SHA.'
       - name: Fail closed without protected staging credentials
         env:
           STAGING_HOST: ${{ secrets.STAGING_HOST }}

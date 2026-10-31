@@ -52,3 +52,7 @@ B2 requires verified issuer+subject identity bindings for every authenticated te
 ## Phase B3 — Staging & Real Provider Protocol Assurance
 
 B3 adds staging-only infrastructure, a protected manual deployment pipeline, HTTPS OIDC/provider preflight, actual ephemeral Keycloak identity/service JWT verification, mandatory MFA-ACR/verified-email checks for staging, and stricter source-evidence contracts. **No live staging host, production identity provider, or actual cross-OS publisher is provisioned in GitHub.** See `docs/PHASE_B3.md` and `deploy/staging/` for exact operator gates and limitations.
+
+## Phase B3.1 — Protected Staging Provisioning and Real Provider Activation Proof
+
+Added a non-destructive dedicated-host bootstrap, protected main-SHA release gates, and an operator-only, signed-JWT multi-provider test-tenant activation verifier. The verifier is strictly opt-in, rejects absent credentials, and requires real approved human+source signatures. **No staging server/provider account is created by code or by GitHub Pages**, and no actual financial feed is claimed active. See [B3.1 operator runbook](docs/PHASE_B3_1.md) and `apps/api/scripts/liveActivation.ts`.

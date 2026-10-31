@@ -49,6 +49,16 @@ jobs:
         run: npm run typecheck --prefix apps/api
       - name: Unit and cross-tenant PostgreSQL contract tests
         run: npm run test:all --prefix apps/api
+      - name: Host script static-syntax checks
+        run: |
+          bash -n deploy/staging/deploy.sh
+          bash -n deploy/staging/provision-host.sh
+      - name: Prove activation blocks when external credentials are absent
+        run: |
+          if npm run staging:activation:prove --prefix apps/api; then
+            echo 'ERROR: live activation proof must reject absent real signed credentials'; exit 1
+          fi
+          echo 'Live activation correctly refuses unconfigured external provider credentials.'
       - name: Compile deployable staging API JavaScript
         run: npm run build --prefix apps/api
       - name: Verify a providerless environment fails closed

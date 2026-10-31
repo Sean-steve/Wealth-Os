@@ -9,6 +9,10 @@ on:
       - 'apps/api/src/auth.ts'
       - 'apps/api/src/b2/sourceContracts.ts'
       - '.github/workflows/wealth-provider-ci.yml'
+      - '.github/workflows/wealth-staging.yml'
+      - 'apps/api/src/b31/**'
+      - 'apps/api/scripts/liveActivation.ts'
+      - 'deploy/staging/**'
 permissions:
   contents: read
 jobs:

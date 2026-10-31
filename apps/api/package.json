@@ -1,6 +1,6 @@
 {
   "name": "@wealth-os/api",
-  "version": "0.4.0-b3",
+  "version": "0.4.1-b31",
   "private": true,
   "type": "module",
   "engines": {
@@ -18,7 +18,8 @@
     "check": "npm run typecheck && npm run test && npm run test:integration",
     "build": "tsc -p tsconfig.build.json",
     "staging:preflight": "tsx scripts/stagingPreflight.ts",
-    "provider:certify": "tsx test/keycloak.provider.ts"
+    "provider:certify": "tsx test/keycloak.provider.ts",
+    "staging:activation:prove": "tsx scripts/liveActivation.ts"
   },
   "dependencies": {
     "fastify": "^5.6.1",
