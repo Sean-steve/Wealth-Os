@@ -33,13 +33,17 @@ export const menu=[
 {label:'Financial Independence',slug:'independence',icon:'independence',phase:3,group:'WORKSPACE'},
 {label:'AI Wealth Advisor',slug:'advisor',icon:'advisor',phase:4,group:'INTELLIGENCE'},
 {label:'Decision Journal',slug:'decisions',icon:'decisions',phase:5,group:'INTELLIGENCE'},
-{label:'Governance & Security',slug:'governance',icon:'governance',phase:5,group:'INTELLIGENCE'}] as const;
+{label:'Policies & Approvals',slug:'governance',icon:'governance',phase:5,group:'INTELLIGENCE'},
+{label:'Security & Privacy',slug:'security',icon:'security',phase:5,group:'INTELLIGENCE'},
+{label:'Wealth Reports',slug:'reports',icon:'reports',phase:5,group:'INTELLIGENCE'},
+{label:'Integrations',slug:'integrations',icon:'integrations',phase:5,group:'INTELLIGENCE'},
+{label:'Workspace Settings',slug:'settings',icon:'settings',phase:5,group:'INTELLIGENCE'}] as const;
 export type Route=(typeof menu)[number]['slug'];
 export const phaseDeliverables:Record<number,string[]>={
 2:['Net worth dashboard and history','Capital pools and allocation workspace','Portfolio holdings and valuations','Income and liability views'],
 3:['Working Goals & Milestones','Versioned Wealth Strategies','Financial Independence planning','Local Wealth Performance journal'],
 4:['Risk Center with evidence thresholds','Opportunity Lab with eligibility and comparisons','Forecasts with return/inflation assumptions and Scenario Lab','Offline rules-based advisor demonstration'],
-5:['Decision journal and recommendation management','Policy, consent and approvals','Reports, integrations and security settings']};
+5:['Decision Journal and recommendations','Local policies and planning-only acknowledgements','Security and privacy preview','Reports, integration contracts and settings']};
 export function money(value:number,compact=true):string{
 const abs=Math.abs(value);
 if(compact && abs>=1000000) return 'KES '+(value/1000000).toFixed(2)+'M';

@@ -1,3 +1,5 @@
+import {seedGovernance,hydrateGovernance} from '../phase5/model';
+import type {GovernanceState} from '../phase5/model';
 import {seedIntelligence,isIntelligenceState} from '../phase4/model';
 import type {IntelligenceState} from '../phase4/model';
 import {seedPlanning,isPlanningState} from '../phase3/model';
@@ -15,7 +17,7 @@ export interface IncomeStream {id:string;name:string;kind:IncomeKind;monthly:num
 export interface CapitalPool {id:string;name:string;purpose:string;balance:number;reserved:number;committed:number}
 export interface Allocation {id:string;poolId:string;target:string;amount:number;date:string}
 export interface Valuation {id:string;positionId:string;previous:number;next:number;at:string;reason:string}
-export interface WealthState {positions:Position[];liabilities:Liability[];income:IncomeStream[];pools:CapitalPool[];allocations:Allocation[];valuations:Valuation[];planning:PlanningState;performance:PerformanceState;intelligence:IntelligenceState}
+export interface WealthState {positions:Position[];liabilities:Liability[];income:IncomeStream[];pools:CapitalPool[];allocations:Allocation[];valuations:Valuation[];planning:PlanningState;performance:PerformanceState;intelligence:IntelligenceState;governance:GovernanceState}
 export const DEMO_DATE='2026-10-31';
 export const initialState:WealthState={
  positions:[
@@ -46,6 +48,7 @@ export const initialState:WealthState={
  allocations:[{id:'a-seed',poolId:'c-growth',target:'Diversified growth plan (sample)',amount:375000,date:DEMO_DATE}],
  planning:structuredClone(seedPlanning),
  intelligence:structuredClone(seedIntelligence),
+ governance:structuredClone(seedGovernance),
  performance:{opening:{at:DEMO_DATE,assets:16100000,liabilities:3260000,netWorth:12840000,income:486500,groups:{'Business equity':5800000,'Property':4200000,'Investments':2900000,'Cash & reserves':2160000,'Other':1040000}},entries:[]},
  valuations:[
   {id:'v-business',positionId:'p-business',previous:5500000,next:5800000,at:DEMO_DATE,reason:'Sample valuation update'},
@@ -150,8 +153,9 @@ export function hydrateState(raw:unknown):WealthState{
  const candidate=raw as WealthState;
  const planning=isPlanningState(candidate.planning)?candidate.planning:structuredClone(seedPlanning);
  const intelligence=isIntelligenceState(candidate.intelligence)?candidate.intelligence:structuredClone(seedIntelligence);
+ const governance=hydrateGovernance(candidate.governance);
  const previous=candidate.performance;
- const prepared:WealthState={...candidate,planning,intelligence,performance:initialState.performance};
+ const prepared:WealthState={...candidate,planning,intelligence,governance,performance:initialState.performance};
  const valid=previous&&previous.opening&&Array.isArray(previous.entries)&&typeof previous.opening.netWorth==='number';
  return {...prepared,performance:valid?previous:{opening:financialSnapshot(prepared),entries:[]}};
 }

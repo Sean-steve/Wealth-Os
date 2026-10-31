@@ -2,7 +2,7 @@
 
 Wealth OS is the strategic wealth-intelligence frontend within the Personal Kernel ecosystem.
 
-## Phase 1–4 — Premium UI, wealth management, strategic planning and intelligence
+## Phase 1–5 — Premium UI, wealth management, strategic planning, intelligence and governed local decisions
 
 Static React + TypeScript + Vite prototype using *illustrative KES sample data*. No database, user accounts, live AI, provider connection or financial execution is present. Phase 2 includes interactive local portfolio, capital, income and liability workflows. Sample records persist in this browser through localStorage. All actions are local browser simulations. The visible Personal Kernel connection is explicitly marked as **planned**.
 
@@ -26,7 +26,7 @@ This repository uses a GitHub Actions Pages workflow from `main`, publishing Vit
 2. **Wealth management** — delivered: net worth, capital, portfolio with valuation history, income and liabilities; browser-local editing/revaluation/reclassification/repayment.
 3. **Planning & Performance** — delivered: dynamic Goals & Milestones, versioned strategy drafts/activation/revisions, financial independence assumptions and contribution scenarios, local performance change journal.
 4. **Wealth intelligence** — delivered: threshold-based Risk Center; Opportunity Lab with eligibility and ranking; deterministic Forecasting; isolated Scenario Lab; evidence-backed rules-only Advisor. Not a real AI service.
-5. Governance — decision journal, approvals, privacy, reports, settings.
+5. **Governance & Supporting Modules** — delivered: recommendations/decision journal, versioned local review policies, planning-only acknowledgements, source freshness checks, privacy and browser data controls, JSON/CSV reports, planned integration catalog and local display settings.
 6. Cross-screen certification, responsive polish and final frontend release.
 
-See `docs/PHASE_1.md` through `docs/PHASE_4.md` for scope and acceptance criteria.
+See `docs/PHASE_1.md` through `docs/PHASE_5.md` for scope and acceptance criteria.

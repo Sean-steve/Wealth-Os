@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import type {FormEvent} from 'react';
 import {ArrowRight,BookOpen,BrainCircuit,CheckCircle2,ChevronRight,Database,LockKeyhole,MessageCircle,Send,ShieldCheck,Sparkles} from 'lucide-react';
 import {useWealth} from '../phase2/context';
@@ -20,7 +20,16 @@ interface Exchange {id:string;question:string;answer:AdvisorAnswer}
 export function AdvisorScreen({navigate}:{navigate:(route:'dashboard'|'risk'|'capital'|'independence'|'goals'|'liabilities'|'opportunities'|'forecasts'|'net-worth')=>void}){
  const {state,metrics}=useWealth();
  const [draft,setDraft]=useState('');
- const [messages,setMessages]=useState<Exchange[]>([]);
+ const remember=state.governance.privacy.rememberAdvisorSessions;
+ const [messages,setMessages]=useState<Exchange[]>(()=>{
+  if(!remember)return [];
+  try {const value=localStorage.getItem('wealth-os-demo-advisor-session');const parsed:unknown=value?JSON.parse(value):[];
+   return Array.isArray(parsed)?parsed.slice(0,15) as Exchange[]:[];}catch{return []}
+ });
+ useEffect(()=>{
+  try{if(remember)localStorage.setItem('wealth-os-demo-advisor-session',JSON.stringify(messages.slice(0,15)));
+   else localStorage.removeItem('wealth-os-demo-advisor-session')}catch{/* browser storage unavailable */}
+ },[remember,messages]);
  function ask(question:string){const prompt=question.trim();if(!prompt)return;const answer=advisorAnswer(state,prompt);setMessages(s=>[{id:String(Date.now())+'-'+s.length,question:prompt,answer},...s].slice(0,15));setDraft('')}
  function send(e:FormEvent){e.preventDefault();ask(draft)}
  function move(route:string){navigate(route as 'dashboard'|'risk'|'capital'|'independence'|'goals'|'liabilities'|'opportunities'|'forecasts'|'net-worth')}
@@ -44,7 +53,7 @@ export function AdvisorScreen({navigate}:{navigate:(route:'dashboard'|'risk'|'ca
  {messages.length? <div className="p4-chat">{messages.map(m=><div key={m.id} className="p4-exchange"><div className="p4-user-question">{m.question}</div><div className="p4-answer"><div className="p4-answer-head"><BrainCircuit size={17}/><b>{m.answer.headline}</b></div><p>{m.answer.body}</p>
  <div className="p4-evidence-title"><Database size={14}/> Evidence used</div><div className="p4-evidence-table">{m.answer.facts.map((f,i)=><div key={i}><span>{f.label}<small>{f.origin}</small></span><b>{f.value}</b></div>)}</div>
  <div className="p4-answer-caveat"><LockKeyhole size={14}/>{m.answer.limitations}</div><div className="p4-answer-next"><div><small>Reasonable next review</small><p>{m.answer.next}</p></div><Button kind="secondary" onClick={()=>move(m.answer.route)}>Open screen <ArrowRight size={13}/></Button></div>
- </div></div>)}</div>:<div className="p4-advisor-empty"><BookOpen size={31}/><h3>Your reasoning trail appears here</h3><p>Start with an example to see what data supports an explanation. Unknown questions are handled with transparent limitations rather than invented answers.</p></div>}
+ </div></div>)}</div>:<div className="p4-advisor-empty"><BookOpen size={31}/><h3>Your reasoning trail appears here</h3><p>Start with an example to see what data supports an explanation. Unknown questions are handled with transparent limitations rather than invented answers. When enabled in Security & Privacy, short Q&A transcripts are stored locally without encryption. Otherwise questions remain in this page session only.</p></div>}
  </Card></div>
  <Card title="Agent permissions · current prototype" subtitle="No autonomous execution or access to private external data">
  <div className="p4-permission-grid"><div><CheckCircle2 size={17}/><span>Read local sample metrics</span></div><div><CheckCircle2 size={17}/><span>Show transparent formulas and risk thresholds</span></div><div><CheckCircle2 size={17}/><span>Explain local scenarios and assumptions</span></div><div className="blocked"><LockKeyhole size={17}/><span>No transactions, trading, policy changes or external calls</span></div></div>
