@@ -130,5 +130,5 @@ export function removeStream(s:WealthState,id:string):WealthState{return {...s,i
 export function isValidState(obj:unknown):obj is WealthState{
  if(!obj||typeof obj!=='object')return false;
  const d=obj as Record<string,unknown>;
- return ['positions','liabilities','income','pools','allocations','valuations'].every(k=>Array.isArray(d[k]))&&d.positions.length<1000;
+ return Array.isArray(d.positions)&&d.positions.length<1000&&['liabilities','income','pools','allocations','valuations'].every(k=>Array.isArray(d[k]));
 }
