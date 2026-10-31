@@ -1,0 +1,12 @@
+{
+  email {$STAGING_ACME_EMAIL}
+}
+{$STAGING_DOMAIN} {
+  encode zstd gzip
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+    Strict-Transport-Security "max-age=31536000"
+  }
+  reverse_proxy api:3009
+}

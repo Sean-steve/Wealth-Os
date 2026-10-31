@@ -10,6 +10,10 @@ const configSchema=z.object({
  OIDC_ISSUER:httpsUrl,
  OIDC_AUDIENCE:z.string().min(1).max(200),
  OIDC_JWKS_URL:httpsUrl,
+ RUNTIME_MODE:z.enum(['development','staging','production']).default('development'),
+ OIDC_REQUIRED_ACR:z.string().min(3).max(160).optional(),
+ OIDC_MAX_AUTH_AGE_SECONDS:z.coerce.number().int().min(60).max(3600).default(900),
+ OIDC_REQUIRE_VERIFIED_EMAIL:z.enum(['true','false']).default('false'),
  CORS_ALLOWED_ORIGINS:z.string().default(''),
  HOST:z.string().default('127.0.0.1'),
  PORT:z.coerce.number().int().min(1).max(65535).default(3009)
@@ -21,6 +25,14 @@ export function loadConfig(env:NodeJS.ProcessEnv=process.env):ApiConfig {
   throw new Error('Wealth OS API is not configured: require DB URL and trusted HTTPS OIDC issuer, audience, JWKS URL.');
  }
  const config=result.data;
+ if(config.RUNTIME_MODE!=='development'){
+  if(!config.OIDC_REQUIRED_ACR||config.OIDC_REQUIRE_VERIFIED_EMAIL!=='true')
+   throw new Error('Staging/production must enforce verified email and a pinned provider-proven MFA ACR.');
+  if(!config.WEALTH_INGEST_DATABASE_URL||!config.INTEGRATION_OIDC_ISSUER||
+   !config.INTEGRATION_OIDC_JWKS_URL||!config.INTEGRATION_OIDC_AUDIENCE)
+   throw new Error('Staging requires a distinct source-service OIDC trust and restricted ingestion database.');
+ }
+
  const sourceFields=[config.WEALTH_INGEST_DATABASE_URL,config.INTEGRATION_OIDC_ISSUER,
   config.INTEGRATION_OIDC_JWKS_URL,config.INTEGRATION_OIDC_AUDIENCE];
  if(sourceFields.some(Boolean)&&sourceFields.some(v=>!v))

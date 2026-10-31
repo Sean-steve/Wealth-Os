@@ -1,15 +1,16 @@
-name: Wealth OS B2 Trust & Integration Certification
+name: Wealth OS B3 Staging & Source Evidence Certification
 on:
   push:
     branches: [main]
     paths:
       - 'apps/api/**'
+      - 'deploy/staging/**'
       - '.github/workflows/wealth-backend.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  backend-b2:
+  backend-b3:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -48,3 +49,13 @@ jobs:
         run: npm run typecheck --prefix apps/api
       - name: Unit and cross-tenant PostgreSQL contract tests
         run: npm run test:all --prefix apps/api
+      - name: Compile deployable staging API JavaScript
+        run: npm run build --prefix apps/api
+      - name: Verify a providerless environment fails closed
+        run: |
+          if npm run staging:preflight --prefix apps/api; then
+            echo 'ERROR: staging preflight must block missing real IdP/source endpoints'; exit 1
+          fi
+          echo 'No real provider endpoints: correctly BLOCKED.'
+      - name: Build non-root staging API container image
+        run: docker build --file deploy/staging/Dockerfile --tag wealth-os-api:ci-check .

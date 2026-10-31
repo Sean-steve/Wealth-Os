@@ -89,6 +89,14 @@ const pageQuery=z.object({limit:z.coerce.number().int().min(1).max(50).default(2
 export function createApp({pool,verifyBearer,allowedOrigins=[],sourceServices={}}:AppDeps):FastifyInstance{
  const app=Fastify({bodyLimit:128*1024,genReqId:()=>randomUUID(),logger:false,trustProxy:false});
  app.addHook('onRequest',async(request,reply)=>{
+  reply.header('Cache-Control','no-store');
+  reply.header('X-Content-Type-Options','nosniff');
+  reply.header('Referrer-Policy','no-referrer');
+  if(['POST','PATCH','PUT','DELETE'].includes(request.method)&&request.headers.origin&&
+   !allowedOrigins.includes(request.headers.origin))
+   fail(403,'UNTRUSTED_ORIGIN','This browser origin is not approved for Wealth OS writes.');
+ });
+ app.addHook('onRequest',async(request,reply)=>{
   const origin=request.headers.origin;
   if(typeof origin!=='string'||!allowedOrigins.includes(origin))return;
   reply.header('Access-Control-Allow-Origin',origin);
@@ -119,9 +127,13 @@ export function createApp({pool,verifyBearer,allowedOrigins=[],sourceServices={}
   current.principal=principal;
   current.wealthTenantId=tenant.data;
  });
- app.get('/health',async()=>({status:'ok',service:'wealth-os-api',stage:'B0'}));
+ app.get('/health',async()=>({status:'ok',service:'wealth-os-api',stage:'B3'}));
  app.get('/ready',async(_request,reply)=>{
-  try{await pool.query('SELECT 1');return {status:'ready',database:'reachable'}}
+  try{
+   const migration=await pool.query("SELECT 1 FROM wealth_core.schema_migrations WHERE version='005_staging_readiness.sql'");
+   if(!migration.rowCount)throw Error('Required source migration is missing.');
+   return {status:'ready',database:'migrated',stage:'B3'};
+  }
   catch{reply.code(503);return {status:'unavailable'}}
  });
  app.get('/api/v1/wealth/capabilities',async request=>{

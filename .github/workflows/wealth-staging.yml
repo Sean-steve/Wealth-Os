@@ -1,0 +1,66 @@
+name: Wealth OS — Protected Staging Deployment (manual only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: wealth-os-staging
+  cancel-in-progress: false
+jobs:
+  staging:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: wealth-staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Fail closed without protected staging credentials
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+        run: |
+          for key in STAGING_HOST STAGING_USER STAGING_SSH_KEY STAGING_KNOWN_HOSTS; do
+            if [ -z "${!key:-}" ]; then
+              echo "Missing mandatory protected staging credential: $key"; exit 2
+            fi
+          done
+          if [[ "$STAGING_HOST" == *"example"* ]] || [[ "$STAGING_HOST" == "localhost" ]]; then
+            echo 'Staging must have a real domain/IP'; exit 2
+          fi
+      - name: Install SSH credentials with pinned known_hosts
+        env:
+          STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$STAGING_SSH_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$STAGING_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+      - name: Sync reviewed main-branch code to staging host
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$STAGING_USER@$STAGING_HOST" \
+            'mkdir -p /srv/wealth-os/staging/source'
+          rsync -az --delete --exclude='.git/' --exclude='.env' \
+            --exclude='node_modules/' --exclude='dist/' --exclude='*.log' \
+            -e 'ssh -o BatchMode=yes -o StrictHostKeyChecking=yes' \
+            ./ "$STAGING_USER@$STAGING_HOST:/srv/wealth-os/staging/source/"
+      - name: Build, migrate with dedicated account, release and smoke HTTPS readiness
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          if ! [[ "$COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]; then exit 2; fi
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$STAGING_USER@$STAGING_HOST" \
+            "bash /srv/wealth-os/staging/source/deploy/staging/deploy.sh $COMMIT_SHA"
+      - name: Deployment evidence and explicit external integration limitation
+        run: |
+          echo "Staging API deployment script exited successfully for ${GITHUB_SHA}." >> "$GITHUB_STEP_SUMMARY"
+          echo "This DOES NOT certify production identity/MFA, source ingestion, tenant provisioning, data correctness or cross-OS UAT." >> "$GITHUB_STEP_SUMMARY"

@@ -48,3 +48,7 @@ PostgreSQL milestone/strategy lifecycle, finance-source-guarded capital proposal
 ## Phase B2 — Kernel-Bound Identity, Source Gateway & Unified Navigation
 
 B2 requires verified issuer+subject identity bindings for every authenticated tenant operation; a distinct signed service OIDC source token and restricted ingestion database account for replay-safe, consented Finance/Asset/Company snapshots; and an explicit **Sample / Connected Authority** switch across all navigation routes. The source repositories have no verified live publisher endpoints/production identity; **do not treat this as a live wealth integration**. Read `docs/PHASE_B2.md` and `apps/api/contracts/hos-external-engine.manifest.json` for identity provisioning, domain boundaries and activation gates.
+
+## Phase B3 — Staging & Real Provider Protocol Assurance
+
+B3 adds staging-only infrastructure, a protected manual deployment pipeline, HTTPS OIDC/provider preflight, actual ephemeral Keycloak identity/service JWT verification, mandatory MFA-ACR/verified-email checks for staging, and stricter source-evidence contracts. **No live staging host, production identity provider, or actual cross-OS publisher is provisioned in GitHub.** See `docs/PHASE_B3.md` and `deploy/staging/` for exact operator gates and limitations.

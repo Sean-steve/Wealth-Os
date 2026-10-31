@@ -11,7 +11,7 @@ try{
  await verifyRestrictedRole(pool);
  if(ingestionPool)await verifyRestrictedRole(ingestionPool); // Fail closed if a superuser/bypass-RLS connection is supplied.
  const app=createApp({pool,verifyBearer:createOidcVerifier(config),allowedOrigins:config.CORS_ALLOWED_ORIGINS.split(',').map(x=>x.trim()).filter(Boolean),
- sourceServices:{pool:ingestionPool,verifyProducer:createProducerVerifier(config)}});
+ sourceServices:{pool:ingestionPool,verifyProducer:createProducerVerifier(config),strictEvidence:config.RUNTIME_MODE!=='development'}});
  const shutdown=async()=>{await app.close();await pool.end();await ingestionPool?.end()};
  process.once('SIGTERM',()=>{void shutdown()});
  process.once('SIGINT',()=>{void shutdown()});

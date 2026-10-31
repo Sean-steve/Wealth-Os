@@ -1,0 +1,151 @@
+{
+  "realm": "wealth-os-ci",
+  "enabled": true,
+  "displayName": "Wealth OS CI Only — Never Deploy",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "verifyEmail": false,
+  "accessTokenLifespan": 300,
+  "loginWithEmailAllowed": false,
+  "clientScopes": [
+    {
+      "name": "wealth:read",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "wealth:write",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "wealth:ingest",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "wealth-os-api",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "wealth-os-source-ingest",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "wealth-os-spa-ci",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://127.0.0.1:5173/*"
+      ],
+      "webOrigins": [
+        "http://127.0.0.1:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "roles",
+        "profile",
+        "email",
+        "wealth:read",
+        "wealth:write"
+      ],
+      "protocolMappers": [
+        {
+          "name": "wealth-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "wealth-os-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "wealth-os-source-ci",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "CI-ONLY-source-client-secret-not-a-real-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": [
+        "roles",
+        "profile",
+        "wealth:ingest"
+      ],
+      "protocolMappers": [
+        {
+          "name": "wealth-source-ingest-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "wealth-os-source-ingest",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "ci-protocol",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "ci-protocol@example.invalid",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CI-ONLY-protocol-password-2026",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "ci-otp-required",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "ci-otp@example.invalid",
+      "requiredActions": [
+        "CONFIGURE_TOTP"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "CI-ONLY-otp-password-2026",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

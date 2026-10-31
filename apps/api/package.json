@@ -1,6 +1,6 @@
 {
   "name": "@wealth-os/api",
-  "version": "0.3.0-b2",
+  "version": "0.4.0-b3",
   "private": true,
   "type": "module",
   "engines": {
@@ -15,7 +15,10 @@
     "test:all": "vitest run --config vitest.config.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:ci:role": "tsx scripts/ci-role.ts",
-    "check": "npm run typecheck && npm run test && npm run test:integration"
+    "check": "npm run typecheck && npm run test && npm run test:integration",
+    "build": "tsc -p tsconfig.build.json",
+    "staging:preflight": "tsx scripts/stagingPreflight.ts",
+    "provider:certify": "tsx test/keycloak.provider.ts"
   },
   "dependencies": {
     "fastify": "^5.6.1",

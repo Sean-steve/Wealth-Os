@@ -4,9 +4,10 @@ import {createHash} from 'node:crypto';
 import {z} from 'zod';
 import {ApiFailure,fail} from '../errors.js';
 import {sourceSnapshot} from './sourceContracts.js';
+import {verifySourceEvidence} from '../b3/providerEvidence.js';
 import type {VerifyProducer,SourceSystem,ProducerIdentity,SourceSnapshot} from './sourceContracts.js';
 
-export interface SourceServices {pool?:Pool;verifyProducer?:VerifyProducer|null}
+export interface SourceServices {pool?:Pool;verifyProducer?:VerifyProducer|null;strictEvidence?:boolean}
 const tenantIdSchema=z.string().uuid();
 const sourcePath=z.enum(['finance','asset','company']);
 const decodeSource=(name:string):SourceSystem=>({
@@ -175,6 +176,7 @@ export function registerSourceRoutes(app:FastifyInstance,services:SourceServices
    const source=decodeSource(path);
    const data=sourceSnapshot.parse(request.body);
    if(data.sourceSystem!==source)fail(422,'SOURCE_MISMATCH','Producer source does not match snapshot route.');
+   verifySourceEvidence(data,services.strictEvidence===true);
    const output=await applySnapshot(services.pool,requested,producer,data,request);
    return reply.status(output.data.status==='APPLIED'?201:200).header('Cache-Control','no-store').send(output);
   });

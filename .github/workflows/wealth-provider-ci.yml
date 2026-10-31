@@ -1,0 +1,52 @@
+name: Wealth OS B3 — Real Keycloak Protocol Certification (CI only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/test/oidc/**'
+      - 'apps/api/test/keycloak.provider.ts'
+      - 'apps/api/src/auth.ts'
+      - 'apps/api/src/b2/sourceContracts.ts'
+      - '.github/workflows/wealth-provider-ci.yml'
+permissions:
+  contents: read
+jobs:
+  keycloak-protocol:
+    name: Ephemeral OIDC/JWKS/JWT/PKCE and dedicated service-token proof
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install API dependencies
+        run: npm install --prefix apps/api --no-audit --no-fund
+      - name: Start disposable Keycloak (loopback only)
+        run: |
+          docker run -d --name wealth-keycloak-ci \
+            -p 127.0.0.1:8181:8080 \
+            -e KC_BOOTSTRAP_ADMIN_USERNAME=ci-admin \
+            -e KC_BOOTSTRAP_ADMIN_PASSWORD=CI-ONLY-admin-not-a-secret \
+            -v "$PWD/apps/api/test/oidc:/opt/keycloak/data/import:ro" \
+            quay.io/keycloak/keycloak:26.8.1 \
+            start-dev --hostname=http://127.0.0.1:8181 --import-realm
+      - name: Wait for genuine OIDC issuer
+        run: |
+          for attempt in $(seq 1 65); do
+            if [ "$(docker inspect --format '{{.State.Running}}' wealth-keycloak-ci 2>/dev/null || echo false)" != true ]; then
+              docker logs wealth-keycloak-ci --tail 100; exit 1
+            fi
+            if curl -fsS --max-time 2 http://127.0.0.1:8181/realms/wealth-os-ci/.well-known/openid-configuration >/dev/null; then
+              echo 'Temporary Keycloak OIDC issuer online'; exit 0
+            fi
+            sleep 2
+          done
+          docker logs wealth-keycloak-ci --tail 150
+          exit 1
+      - name: Real signed user and service JWT certification
+        run: cd apps/api && node --import tsx test/keycloak.provider.ts
+      - name: Stop ephemeral issuer
+        if: always()
+        run: docker rm -f wealth-keycloak-ci || true
