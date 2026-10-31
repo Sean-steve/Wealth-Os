@@ -30,6 +30,10 @@ assert.equal(decodeProtectedHeader(sourceToken).alg,'RS256');
 const config={OIDC_ISSUER:issuer,OIDC_JWKS_URL:metadata.jwks_uri,OIDC_AUDIENCE:'wealth-os-api',
  INTEGRATION_OIDC_ISSUER:issuer,INTEGRATION_OIDC_JWKS_URL:metadata.jwks_uri,
  INTEGRATION_OIDC_AUDIENCE:'wealth-os-source-ingest'} as ApiConfig;
+const claims=decodeJwt(userToken);
+const missingClaims=['sub','iat','exp'].filter(key=>!claims[key as keyof typeof claims]);
+if(missingClaims.length)throw Error('CI Keycloak JWT missing required claims '+missingClaims.join(',')+
+ '; claim names (no values): '+Object.keys(claims).sort().join(','));
 const human=await createOidcVerifier(config)(userToken);
 assert.ok(human.scopes.has('wealth:read')&&human.scopes.has('wealth:write'));
 const verifySource=createProducerVerifier(config);
