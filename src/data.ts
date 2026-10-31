@@ -28,7 +28,8 @@ export const menu=[
 {label:'Wealth Performance',slug:'performance',icon:'performance',phase:3,group:'WORKSPACE'},
 {label:'Risk Center',slug:'risk',icon:'risk',phase:4,group:'WORKSPACE'},
 {label:'Opportunity Lab',slug:'opportunities',icon:'opportunity',phase:4,group:'WORKSPACE'},
-{label:'Forecast & Scenarios',slug:'forecasts',icon:'forecasts',phase:4,group:'WORKSPACE'},
+{label:'Wealth Forecasting',slug:'forecasts',icon:'forecasts',phase:4,group:'WORKSPACE'},
+{label:'Scenario Lab',slug:'scenarios',icon:'scenarios',phase:4,group:'WORKSPACE'},
 {label:'Financial Independence',slug:'independence',icon:'independence',phase:3,group:'WORKSPACE'},
 {label:'AI Wealth Advisor',slug:'advisor',icon:'advisor',phase:4,group:'INTELLIGENCE'},
 {label:'Decision Journal',slug:'decisions',icon:'decisions',phase:5,group:'INTELLIGENCE'},
@@ -37,7 +38,7 @@ export type Route=(typeof menu)[number]['slug'];
 export const phaseDeliverables:Record<number,string[]>={
 2:['Net worth dashboard and history','Capital pools and allocation workspace','Portfolio holdings and valuations','Income and liability views'],
 3:['Working Goals & Milestones','Versioned Wealth Strategies','Financial Independence planning','Local Wealth Performance journal'],
-4:['Risk exposures and opportunity comparisons','Forecasts and scenario lab','AI advisor experience (local demonstration)'],
+4:['Risk Center with evidence thresholds','Opportunity Lab with eligibility and comparisons','Forecasts with return/inflation assumptions and Scenario Lab','Offline rules-based advisor demonstration'],
 5:['Decision journal and recommendation management','Policy, consent and approvals','Reports, integrations and security settings']};
 export function money(value:number,compact=true):string{
 const abs=Math.abs(value);
