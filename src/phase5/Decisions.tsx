@@ -1,6 +1,6 @@
 import {useMemo,useState} from 'react';
 import type {FormEvent} from 'react';
-import {Activity,ArrowRight,BookOpen,CheckCircle2,ClipboardCheck,Clock3,Filter,LockKeyhole,Plus,RefreshCw,ShieldAlert,Target} from 'lucide-react';
+import {Activity,ArrowRight,BookOpen,CheckCircle2,ClipboardCheck,Clock3,LockKeyhole,Plus,RefreshCw,ShieldAlert,Target} from 'lucide-react';
 import {useWealth} from '../phase2/context';
 import {approveForPlanning,closeCase,createCase,declineCase,evaluateCase,proposals,reviseCaseRationale,submitReview} from './model';
 import type {DecisionCase,DecisionStage,Proposal} from './model';

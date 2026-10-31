@@ -7,7 +7,7 @@ import {
  reviseCaseRationale,declineCase,closeCase,updatePolicy,validatePolicy,updatePrivacy,updateWorkspaceSettings,
  buildReport,reportCsv,reportJson
 } from './model';
-import type {DecisionCase,PlanningPolicy,PrivacyPrefs,WorkspaceSettings} from './model';
+import type {PrivacyPrefs,WorkspaceSettings} from './model';
 
 const DATE='2026-10-31';
 const REASON='Review this hypothetical option against current sample reserves, goals and valuation evidence.';
