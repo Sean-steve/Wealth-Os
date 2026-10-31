@@ -17,7 +17,7 @@ assert.ok(jwks.keys.length>0);
 const token=async(body:URLSearchParams)=>fetch(metadata.token_endpoint,{method:'POST',
  headers:{'content-type':'application/x-www-form-urlencoded'},body,signal:AbortSignal.timeout(8000)});
 const userResponse=await token(new URLSearchParams({grant_type:'password',client_id:'wealth-os-spa-ci',
- username:'ci-protocol',password:'CI-ONLY-protocol-password-2026',scope:'openid profile'}));
+ username:'ci-protocol',password:'CI-ONLY-protocol-password-2026'}));
 if(userResponse.status!==200)throw Error('CI Keycloak protocol user rejected: '+userResponse.status+' '+(await userResponse.text()).slice(0,200));
 const {access_token:userToken}=await userResponse.json() as {access_token:string};
 assert.equal(decodeProtectedHeader(userToken).alg,'RS256');

@@ -18,7 +18,7 @@ const complete={
 describe('B3 provider activation gate',()=>{
  it('refuses staging startup with no MFA issuer assurance or incomplete source trust',()=>{
   expect(()=>loadConfig({...base,RUNTIME_MODE:'staging'})).toThrow('MFA');
-  expect(()=>loadConfig({...complete,OIDC_REQUIRED_ACR:''})).toThrow('MFA');
+  expect(()=>loadConfig({...complete,OIDC_REQUIRED_ACR:''})).toThrow('not configured');
   expect(()=>loadConfig({...complete,OIDC_REQUIRE_VERIFIED_EMAIL:'false'})).toThrow('MFA');
   expect(()=>loadConfig({...complete,INTEGRATION_OIDC_AUDIENCE:''})).toThrow();
   expect(loadConfig(complete).RUNTIME_MODE).toBe('staging');
