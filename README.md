@@ -40,3 +40,7 @@ The v0.6 workflow gates GitHub Pages on unit tests, strict TypeScript, productio
 ## Backend Phase B0 — Separate PostgreSQL API foundation
 
 New backend under `apps/api/` with tenant-scoped PostgreSQL, first durable Wealth OS Profile and Goals REST endpoints, authorization boundaries, transactional audit/outbox, contracts and separate CI. **The existing Pages frontend remains browser-local and has not been switched to this API.** See `docs/PHASE_B0.md` for setup, source-of-truth authority, security limitations and B1 prerequisites.
+
+## Backend Phase B1 — Durable Wealth Planning & Guarded Live Workspace
+
+PostgreSQL milestone/strategy lifecycle, finance-source-guarded capital proposals, consent-gated read-only portfolio/income/liability projections, and completeness-gated wealth-state aggregation are under `apps/api/src/b1/`. The **Connected Workspace** is a separate OIDC/PKCE-secured frontend route and is *unconfigured* on public GitHub Pages by default. Other screens remain fictional demos. See `docs/PHASE_B1.md` for integration details, policy setup, testing and limitations.

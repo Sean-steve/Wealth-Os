@@ -5,12 +5,12 @@ const base='/Wealth-Os/';
 const routes=[
  'dashboard','net-worth','capital','portfolio','income','liabilities',
  'goals','strategies','performance','risk','opportunities','forecasts','scenarios',
- 'independence','advisor','decisions','governance','security','reports','integrations','settings'
+ 'independence','advisor','decisions','governance','security','reports','integrations','settings','connected'
 ];
 async function go(page:import('@playwright/test').Page,route:string){await page.goto(base+'#'+route);await expect(page.locator('main h1')).toBeVisible()}
 test.beforeEach(async({page})=>{await page.goto(base+'#dashboard');await page.evaluate(()=>localStorage.clear())});
 
-test('all 21 routes render a navigable module without uncaught browser errors',async({page})=>{
+test('all 22 routes render a navigable module without uncaught browser errors',async({page})=>{
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
  for(const route of routes){
   await go(page,route);

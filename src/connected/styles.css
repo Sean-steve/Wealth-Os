@@ -1,0 +1,29 @@
+/* B1 authenticated workspace; intentionally distinct from browser-local fictional dashboards. */
+.cw-page{min-width:0}
+.cw-copy{font-size:12px;line-height:1.75;color:#748099;margin:12px 0}
+.cw-copy code{background:#f1efff;padding:3px 5px;border-radius:5px;color:#6158ac}
+.cw-auth{display:flex;justify-content:space-between;align-items:center;gap:20px;background:#f4f2ff;border:1px solid #e7e2ff;padding:19px 23px;border-radius:14px}
+.cw-auth>div{display:flex;align-items:center;gap:12px;min-width:0;color:#7463d5}
+.cw-auth>div>div{display:flex;flex-direction:column;gap:5px}
+.cw-auth b{font-size:13px;color:#3e3b70}
+.cw-auth small{font-size:11px;line-height:1.6;color:#8e8cad}
+.cw-tenant-row{display:flex;align-items:flex-end;gap:12px}
+.cw-tenant-row>.wos-field{flex:1;min-width:0}
+.cw-tenant-row .wos-action{margin-bottom:1px}
+.cw-tabs{display:flex;align-items:center;gap:6px;overflow-x:auto;border-bottom:1px solid #e9eaf4;padding:8px 2px;max-width:100%;scrollbar-width:thin}
+.cw-tabs button{border:1px solid transparent;background:transparent;color:#7b89a0;font-size:11.5px;font-weight:750;border-radius:10px;padding:10px 14px;white-space:nowrap;cursor:pointer}
+.cw-tabs button:hover{background:#f8f6ff;color:#6056b8}
+.cw-tabs button[aria-selected="true"]{background:#eeeaff;color:#564dc4;border-color:#e0dafa}
+.cw-record{padding:14px 0;border-bottom:1px solid #eceff5;display:flex;flex-direction:column;gap:7px}
+.cw-record:last-child{border-bottom:0}
+.cw-record>b{font-size:11.5px;color:#34415c;overflow-wrap:anywhere}
+.cw-record>span,.cw-record>small{color:#8c99ac;font-size:10.5px;line-height:1.6;overflow-wrap:anywhere}
+.cw-record .wos-action{align-self:flex-start}
+.cw-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.cw-actions span{font-size:10px;color:#9aa3b5}
+.cw-blocker{display:flex;align-items:flex-start;gap:8px;color:#99613a;background:#fff9ee;border:1px solid #f5e8cf;padding:10px;border-radius:9px;font-size:11px;line-height:1.6;margin-bottom:8px}
+.cw-blocker svg{flex-shrink:0}
+.cw-notice{display:flex;gap:10px;align-items:center;background:#eaf8f1;color:#318b68;border:1px solid #ceefdf;border-radius:11px;padding:13px 16px;font-size:11px}
+.cw-foot{display:flex;gap:9px;color:#8d96a6;font-size:10.5px;align-items:center;line-height:1.6;margin:13px 0}
+.cw-foot svg{flex-shrink:0}
+@media(max-width:700px){.cw-auth{flex-direction:column;align-items:stretch;padding:14px}.cw-auth>.wos-action{align-self:flex-start}.cw-tenant-row{flex-direction:column;align-items:stretch}.cw-tenant-row>.wos-action{align-self:flex-start}.cw-tabs button{padding:10px 11px}}

@@ -1,6 +1,6 @@
 {
   "name": "wealth-os",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "vitest run src/phase",
+    "test": "vitest run src/phase src/connected",
     "test:e2e": "playwright test",
     "test:release": "npm run typecheck && npm test && npm run build && npm run test:e2e"
   },

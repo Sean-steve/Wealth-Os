@@ -37,7 +37,8 @@ export const menu=[
 {label:'Security & Privacy',slug:'security',icon:'security',phase:5,group:'INTELLIGENCE'},
 {label:'Wealth Reports',slug:'reports',icon:'reports',phase:5,group:'INTELLIGENCE'},
 {label:'Integrations',slug:'integrations',icon:'integrations',phase:5,group:'INTELLIGENCE'},
-{label:'Workspace Settings',slug:'settings',icon:'settings',phase:5,group:'INTELLIGENCE'}] as const;
+{label:'Workspace Settings',slug:'settings',icon:'settings',phase:5,group:'INTELLIGENCE'},
+{label:'Connected Workspace',slug:'connected',icon:'connected',phase:6,group:'INTELLIGENCE'}] as const;
 export type Route=(typeof menu)[number]['slug'];
 export const phaseDeliverables:Record<number,string[]>={
 2:['Net worth dashboard and history','Capital pools and allocation workspace','Portfolio holdings and valuations','Income and liability views'],

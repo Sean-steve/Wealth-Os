@@ -119,6 +119,38 @@ components:
         targetDate: {type: string, format: date}
         priority: {type: string, enum: [LOW,MEDIUM,HIGH]}
         status: {type: string, enum: [ACTIVE,PAUSED,COMPLETED,ARCHIVED]}
+    B1StrategyInput:
+      type: object
+      additionalProperties: false
+      required: [goalId,name,allocationTargets,assumptions]
+      properties:
+        goalId: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 200}
+        thesis: {type: string, maxLength: 3000}
+        allocationTargets:
+          type: array
+          minItems: 1
+          maxItems: 20
+          description: Integer basis points must sum to 10000.
+          items:
+            type: object
+            required: [label,basisPoints]
+            additionalProperties: false
+            properties:
+              label: {type: string, minLength: 1, maxLength: 120}
+              basisPoints: {type: integer, minimum: 0, maximum: 10000}
+        assumptions:
+          type: object
+          required: [riskTolerance,horizonYears,assumedAnnualReturnPct]
+          additionalProperties: false
+          properties:
+            riskTolerance: {enum: [CONSERVATIVE,BALANCED,GROWTH]}
+            horizonYears: {type: integer, minimum: 1, maximum: 60}
+            assumedAnnualReturnPct: {type: number, minimum: -50, maximum: 50}
+    B1StrategyRevision:
+      allOf:
+        - {$ref: '#/components/schemas/B1StrategyInput'}
+      description: Same as B1StrategyInput except goalId is immutable and must be omitted.
 paths:
   /health:
     get:
@@ -230,3 +262,203 @@ paths:
         '404': {description: Goal missing}
         '409': {description: Version/idempotency conflict}
         '428': {description: Missing precondition or idempotency key}
+  /api/v1/wealth/goals/{id}/milestones:
+    get:
+      tags: [Goals]
+      summary: List durable goal milestones
+      parameters: [{$ref: '#/components/parameters/Tenant'},{$ref: '#/components/parameters/GoalId'}]
+      responses:
+        '200': {description: Tenant-scoped goal milestone collection}
+        '404': {description: Parent goal not found}
+    post:
+      tags: [Goals]
+      summary: Create a milestone, without moving capital
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters: [{$ref: '#/components/parameters/Tenant'},{$ref: '#/components/parameters/GoalId'},{$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [title,targetAmount,dueDate]
+              properties:
+                title: {type: string, minLength: 1, maxLength: 160}
+                targetAmount: {type: string, pattern: '^[0-9]+(\\.[0-9]{1,4})?$'}
+                dueDate: {type: string, format: date}
+      responses:
+        '201': {description: New milestone and ETag}
+        '422': {description: Milestone exceeds goal target or deadline}
+        '428': {description: Missing Idempotency-Key}
+  /api/v1/wealth/goals/{id}/milestones/{milestoneId}:
+    patch:
+      tags: [Goals]
+      summary: Versioned milestone update
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters:
+        - {$ref: '#/components/parameters/Tenant'}
+        - {$ref: '#/components/parameters/GoalId'}
+        - {$ref: '#/components/parameters/Idempotency'}
+        - {$ref: '#/components/parameters/IfMatch'}
+        - {name: milestoneId, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              additionalProperties: false
+              properties:
+                title: {type: string, minLength: 1, maxLength: 160}
+                targetAmount: {type: string}
+                dueDate: {type: string, format: date}
+                status: {type: string, enum: [PLANNED,REACHED,MISSED,CANCELLED]}
+      responses:
+        '200': {description: Updated milestone and ETag}
+        '409': {description: Optimistic concurrency conflict}
+  /api/v1/wealth/strategies:
+    get:
+      tags: [Goals]
+      summary: Latest version of each tenant-owned strategy
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200': {description: Strategy list with active and latest version pointers}
+    post:
+      tags: [Goals]
+      summary: Create immutable DRAFT strategy version 1
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters: [{$ref: '#/components/parameters/Tenant'},{$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/B1StrategyInput'}
+      responses:
+        '201': {description: Durable planning draft, no execution}
+        '422': {description: Linked goal not active}
+  /api/v1/wealth/strategies/{id}:
+    get:
+      tags: [Goals]
+      summary: Latest strategy plus immutable full version history
+      parameters: [{$ref: '#/components/parameters/Tenant'},{$ref: '#/components/parameters/GoalId'}]
+      responses:
+        '200': {description: Latest strategy and version history}
+        '404': {description: Strategy does not exist in tenant}
+  /api/v1/wealth/strategies/{id}/versions:
+    post:
+      tags: [Goals]
+      summary: Append draft revision; preserve history
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters: [{$ref: '#/components/parameters/Tenant'},{$ref: '#/components/parameters/GoalId'},{$ref: '#/components/parameters/IfMatch'},{$ref: '#/components/parameters/Idempotency'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/B1StrategyRevision'}
+      responses:
+        '201': {description: Newly appended draft version}
+        '409': {description: Strategy version changed}
+  /api/v1/wealth/strategies/{id}/activate:
+    post:
+      tags: [Goals]
+      summary: Append an active planning-only version
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters: [{$ref: '#/components/parameters/Tenant'},{$ref: '#/components/parameters/GoalId'},{$ref: '#/components/parameters/IfMatch'},{$ref: '#/components/parameters/Idempotency'}]
+      responses:
+        '200': {description: Planning version activated; no trade or cash movement}
+        '409': {description: Another strategy active for this goal or stale version}
+  /api/v1/wealth/capital/pools:
+    get:
+      tags: [Goals]
+      summary: Source-classified Finance OS cash; no money authority
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200': {description: Available classifications and source freshness}
+  /api/v1/wealth/capital/proposals:
+    get:
+      tags: [Goals]
+      summary: List tenant-scoped non-executing allocation proposals
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200': {description: Planning-only proposals}
+    post:
+      tags: [Goals]
+      summary: Guarded allocation DRAFT without any transfer/hold
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters: [{$ref: '#/components/parameters/Tenant'},{$ref: '#/components/parameters/Idempotency'},{$ref: '#/components/parameters/IfMatch'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [poolId,target,amount,rationale]
+              additionalProperties: false
+              properties:
+                poolId: {type: string, format: uuid}
+                target: {type: string, minLength: 3, maxLength: 200}
+                amount: {type: string, pattern: '^[0-9]+(\\.[0-9]{1,4})?$'}
+                rationale: {type: string, minLength: 20, maxLength: 1200}
+      responses:
+        '201': {description: DRAFT only, financialExecution false}
+        '422': {description: Insufficient free cash, stale source, missing policy or cap exceeded}
+  /api/v1/wealth/capital/proposals/{id}/cancel:
+    post:
+      tags: [Goals]
+      summary: Cancel draft planning intent (not a financial reversal)
+      security: [{OidcAccessToken: [wealth:write]}]
+      parameters: [{$ref: '#/components/parameters/Tenant'},{$ref: '#/components/parameters/GoalId'},{$ref: '#/components/parameters/IfMatch'},{$ref: '#/components/parameters/Idempotency'}]
+      responses:
+        '200': {description: Cancelled planning intent}
+        '409': {description: Proposal version changed or not a draft}
+  /api/v1/wealth/portfolio/holdings:
+    get:
+      tags: [Profile]
+      summary: Read-only holdings projection with active per-subject source consent
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200': {description: Concession-scoped holdings and missing consents}
+  /api/v1/wealth/income:
+    get:
+      tags: [Profile]
+      summary: Read-only income projection; income source remains authoritative
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200': {description: Consent-scoped income projections}
+  /api/v1/wealth/liabilities:
+    get:
+      tags: [Profile]
+      summary: Read-only Finance OS debt projections; no repayment authority
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200': {description: Consent-scoped debt projections}
+  /api/v1/wealth/state:
+    get:
+      tags: [Profile]
+      summary: Reconcile complete fresh source projections without inventing net worth
+      description: >
+        Returns status INCOMPLETE with null netWorth, grossAssets and liabilities
+        unless subject has explicit consent for every required Finance/Asset/Company source,
+        all three sources report complete fresh snapshots and all holdings/liabilities
+        have verified recent KES valuation data.
+      parameters: [{$ref: '#/components/parameters/Tenant'}]
+      responses:
+        '200':
+          description: Completeness status with either null metrics or decimal-string ownership-weighted values
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required: [status,netWorth,grossAssets,liabilities,blockers,financialExecutionEnabled]
+                    properties:
+                      status: {enum: [INCOMPLETE, RECONCILED_SOURCE_PROJECTION]}
+                      netWorth: {type: [string, 'null']}
+                      grossAssets: {type: [string, 'null']}
+                      liabilities: {type: [string, 'null']}
+                      blockers: {type: array, items: {type: string}}
+                      financialExecutionEnabled: {const: false}

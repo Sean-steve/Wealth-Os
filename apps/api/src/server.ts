@@ -7,7 +7,7 @@ const config=loadConfig();
 const pool=createPool(config.WEALTH_APP_DATABASE_URL);
 try{
  await verifyRestrictedRole(pool); // Fail closed if a superuser/bypass-RLS connection is supplied.
- const app=createApp({pool,verifyBearer:createOidcVerifier(config)});
+ const app=createApp({pool,verifyBearer:createOidcVerifier(config),allowedOrigins:config.CORS_ALLOWED_ORIGINS.split(',').map(x=>x.trim()).filter(Boolean)});
  const shutdown=async()=>{await app.close();await pool.end()};
  process.once('SIGTERM',()=>{void shutdown()});
  process.once('SIGINT',()=>{void shutdown()});

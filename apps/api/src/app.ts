@@ -9,8 +9,11 @@ import {withTenant,requireMemberWrite} from './db.js';
 import type {TenantContext} from './db.js';
 import {ApiFailure,fail} from './errors.js';
 import {tenantHeader,profileInput,createGoalInput,updateGoalInput,uuid,etagFor,expectedVersion,cursorParse,cursorEncode} from './contracts.js';
+import {registerPlanningRoutes} from './b1/planningRoutes.js';
+import {registerCapitalRoutes} from './b1/capitalRoutes.js';
+import {registerProjectionRoutes} from './b1/projectionRoutes.js';
 
-export interface AppDeps {pool:Pool;verifyBearer:VerifyBearer}
+export interface AppDeps {pool:Pool;verifyBearer:VerifyBearer;allowedOrigins?:readonly string[]}
 type AuthRequest=FastifyRequest & {principal?:Principal;wealthTenantId?:string};
 type HttpResult={status:number;body:Record<string,unknown>;headers?:Record<string,string>};
 const profileSelect=`SELECT tenant_id AS "tenantId",base_currency AS "baseCurrency",
@@ -36,7 +39,7 @@ function stripIfInvalid(error:unknown):ApiFailure{
  });
  return new ApiFailure(500,'INTERNAL_ERROR','An unexpected server error occurred.');
 }
-function writeAuditAndEvent(ctx:TenantContext,request:FastifyRequest,aggregate:'wealth_profile'|'wealth_goal',id:string,eventType:string,prior:unknown,next:unknown){
+function writeAuditAndEvent(ctx:TenantContext,request:FastifyRequest,aggregate:string,id:string,eventType:string,prior:unknown,next:unknown){
  const q=ctx.client,correlationId=request.id;
  return Promise.all([
   q.query(`INSERT INTO wealth_audit.audit_events
@@ -55,7 +58,7 @@ async function idempotent(ctx:TenantContext,request:FastifyRequest,body:unknown,
  if(!valid.success)fail(428,'IDEMPOTENCY_KEY_REQUIRED','Supply Idempotency-Key (8–128 alphanumeric, dash, underscore or colon).');
  const key=valid.data;
  const pathname=request.url.split('?')[0];
- const hash=createHash('sha256').update(JSON.stringify({method:request.method,path:pathname,body})).digest('hex');
+ const hash=createHash('sha256').update(JSON.stringify({method:request.method,path:pathname,ifMatch:request.headers['if-match']??null,body})).digest('hex');
  // INSERT+SELECT FOR UPDATE serializes concurrent requests with the same key.
  await ctx.client.query(`INSERT INTO wealth_integration.idempotency_keys(tenant_id,key,actor_subject,request_hash)
  VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`,[ctx.tenantId,key,ctx.principal.subject,hash]);
@@ -80,8 +83,19 @@ async function idempotent(ctx:TenantContext,request:FastifyRequest,body:unknown,
 }
 const pageQuery=z.object({limit:z.coerce.number().int().min(1).max(50).default(20),cursor:z.string().max(300).optional()}).strict();
 
-export function createApp({pool,verifyBearer}:AppDeps):FastifyInstance{
+export function createApp({pool,verifyBearer,allowedOrigins=[]}:AppDeps):FastifyInstance{
  const app=Fastify({bodyLimit:128*1024,genReqId:()=>randomUUID(),logger:false,trustProxy:false});
+ app.addHook('onRequest',async(request,reply)=>{
+  const origin=request.headers.origin;
+  if(typeof origin!=='string'||!allowedOrigins.includes(origin))return;
+  reply.header('Access-Control-Allow-Origin',origin);
+  reply.header('Vary','Origin');
+  reply.header('Access-Control-Allow-Methods','GET,POST,PATCH,PUT,OPTIONS');
+  reply.header('Access-Control-Allow-Headers','Authorization,Content-Type,X-Wealth-Tenant-Id,If-Match,Idempotency-Key');
+  reply.header('Access-Control-Expose-Headers','ETag,Location');
+  reply.header('Access-Control-Max-Age','600');
+  if(request.method==='OPTIONS')return reply.status(204).send();
+ });
  app.setErrorHandler((err,request,reply)=>{
   const failure=stripIfInvalid(err);
   reply.code(failure.status).send({error:{
@@ -111,7 +125,7 @@ export function createApp({pool,verifyBearer}:AppDeps):FastifyInstance{
   const {principal,tenantId}=authFor(request);
   return withTenant(pool,principal,tenantId,async()=>({
    stage:'B0',mode:'backend-foundation',
-   modules:{profile:'durable',goals:'durable',portfolio:'contract-only',capital:'contract-only',forecast:'contract-only',execution:'disabled'},
+   modules:{profile:'durable',goals:'durable',milestones:'durable',strategies:'durable',capitalProposals:'durable-planning-only',portfolio:'consent-gated-read-only',income:'consent-gated-read-only',liabilities:'consent-gated-read-only',wealthState:'source-reconciliation-gated',forecast:'contract-only',execution:'disabled'},
    connectedSourceSystems:[],financialExecutionEnabled:false,frontendConnected:false
   }));
  });
@@ -230,5 +244,9 @@ export function createApp({pool,verifyBearer}:AppDeps):FastifyInstance{
   });
   return result(reply,response);
  });
+ const tools={authFor,idempotent,audit:writeAuditAndEvent,result};
+ registerPlanningRoutes(app,pool,tools);
+ registerCapitalRoutes(app,pool,tools);
+ registerProjectionRoutes(app,pool,tools);
  return app;
 }

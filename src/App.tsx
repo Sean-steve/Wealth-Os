@@ -34,11 +34,13 @@ import {IntegrationsScreen} from './phase5/Integrations';
 import {SettingsScreen} from './phase5/Settings';
 import './phase5/styles.css';
 import './phase6/styles.css';
+import {ConnectedWorkspace} from './connected/ConnectedWorkspace';
+import './connected/styles.css';
 
 const iconSet={
  dashboard:LayoutDashboard,networth:TrendingUp,capital:WalletCards,portfolio:BriefcaseBusiness,
  goals:Target,risk:TriangleAlert,opportunity:Sparkles,forecasts:ChartNoAxesCombined,
- independence:Landmark,advisor:BrainCircuit,decisions:NotebookText,governance:ShieldCheck,income:Landmark,liabilities:WalletCards,strategies:BriefcaseBusiness,performance:ChartNoAxesCombined,scenarios:Sparkles,security:LockKeyhole,reports:NotebookText,integrations:BriefcaseBusiness,settings:ChartNoAxesCombined
+ independence:Landmark,advisor:BrainCircuit,decisions:NotebookText,governance:ShieldCheck,income:Landmark,liabilities:WalletCards,strategies:BriefcaseBusiness,performance:ChartNoAxesCombined,scenarios:Sparkles,security:LockKeyhole,reports:NotebookText,integrations:BriefcaseBusiness,settings:ChartNoAxesCombined,connected:ShieldCheck
 };
 const dateLabel='31 Oct 2026 · fictional sample';
 const routes=menu.map(x=>x.slug);
@@ -153,7 +155,11 @@ function FutureScreen({route,navigate}:{route:Route,navigate:(r:Route)=>void}){
 }
 function AppShell(){
  const {notice,notify,state}=useWealth();
- const [route,setRoute]=useState<Route>(()=>window.location.hash?initialRoute():state.governance.settings.defaultScreen);
+ const [route,setRoute]=useState<Route>(()=>{
+  const params=new URLSearchParams(window.location.search);
+  if(params.has('code')||params.has('error'))return 'connected';
+  return window.location.hash?initialRoute():state.governance.settings.defaultScreen;
+ });
  const [mobileOpen,setMobileOpen]=useState(false);
  const [search,setSearch]=useState('');
  const [searchOpen,setSearchOpen]=useState(false);
@@ -171,7 +177,7 @@ function AppShell(){
  <div className="brand"><span className="brandmark">◇</span><span className="brand-text">wealth<span>os</span><small>PERSONAL KERNEL</small></span></div>
  {(['WORKSPACE','INTELLIGENCE'] as const).map(group=><div key={group}><div className="nav-title">{group}</div><nav aria-label={group.toLowerCase()}>{menu.filter(x=>x.group===group).map(item=>{const Icon=iconSet[item.icon];return <button type="button" key={item.slug} className={'nav-item '+(route===item.slug?'active':'')} onClick={()=>navigate(item.slug)} aria-current={route===item.slug?'page':undefined}><Icon size={17} strokeWidth={1.85}/><span>{item.label}</span>{item.phase>5&&<span className="nav-phase">·</span>}</button>})}</nav></div>)}
  <div className="sidebar-grow"/>
- <div className="kernel-status"><div><span className="kernel-dot"/>Kernel bridge · Planned</div><p>Frontend preview only. No cross-OS data connection is active.</p></div>
+ <div className="kernel-status"><div><span className="kernel-dot"/>Kernel bridge · Planned</div><p>Demo workspaces remain local. Authenticated backend workspace requires real OIDC setup.</p></div>
  <div className="side-account"><span className="avatar">WO</span><div><b>Personal Wealth</b><small>Sample workspace</small></div><ChevronDown size={14}/></div>
  </aside>
  <div className="page">
@@ -179,7 +185,7 @@ function AppShell(){
  <div className="search-shell"><Search size={16}/><input ref={searchRef} type="search" aria-label="Search Wealth OS modules" value={search} onFocus={()=>setSearchOpen(true)} onChange={e=>{setSearch(e.target.value);setSearchOpen(true)}} placeholder="Search wealth, goals, decisions..."/><span className="shortcut">⌘ K</span>{searchOpen&&<div className="search-results">{results.length?results.map(item=><button key={item.slug} type="button" onClick={()=>navigate(item.slug)}>{item.label}<span>{item.phase<=5?'Open screen':'Phase '+item.phase}</span></button>):<p>No matching Wealth OS modules</p>}</div>}</div>
  <div className="top-actions"><div className="popover-anchor"><button type="button" className="icon-btn notification" aria-label="Show notifications" aria-expanded={noticesOpen} onClick={()=>{setNoticesOpen(v=>!v);setProfileOpen(false)}}><Bell size={18}/><i/></button>{noticesOpen&&<div className="popover"><b>Preview notifications</b><p><Clock3 size={15}/> Wealth OS v0.6 frontend release candidate is ready to explore.</p><p><Info size={15}/> No live financial alerts are connected.</p></div>}</div><div className="top-divider"/><button type="button" className="connection" onClick={()=>navigate('governance')}><i/> Preview mode <ChevronDown size={13}/></button><div className="popover-anchor"><button type="button" className="avatar top-avatar" aria-label="Open local demo workspace menu" onClick={()=>{setProfileOpen(v=>!v);setNoticesOpen(false)}}>WO</button>{profileOpen&&<div className="popover account-popover"><b>Personal Wealth</b><p>Sample workspace · no sign-in</p><button type="button" onClick={()=>navigate('governance')}>View governance roadmap <ArrowRight size={13}/></button></div>}</div></div>
  </header>
- <main id="main-content" tabIndex={-1} aria-label={current.label} className="content" onClick={()=>{if(searchOpen)setSearchOpen(false)}}>{route==='dashboard'?<Dashboard navigate={navigate}/>:['net-worth','capital','portfolio','income','liabilities'].includes(route)?<Phase2Screen route={route as 'net-worth'|'capital'|'portfolio'|'income'|'liabilities'}/>:route==='goals'?<GoalsScreen navigate={navigate}/>:route==='strategies'?<StrategiesScreen navigate={navigate}/>:route==='independence'?<IndependenceScreen navigate={navigate}/>:route==='performance'?<PerformanceScreen navigate={navigate}/>:route==='risk'?<RiskScreen navigate={navigate}/>:route==='opportunities'?<OpportunitiesScreen navigate={navigate}/>:route==='forecasts'?<ForecastScreen navigate={navigate}/>:route==='scenarios'?<ScenarioScreen navigate={navigate}/>:route==='advisor'?<AdvisorScreen navigate={navigate}/>:route==='decisions'?<DecisionsScreen navigate={navigate}/>:route==='governance'?<GovernanceScreen navigate={navigate}/>:route==='security'?<SecurityScreen navigate={navigate}/>:route==='reports'?<ReportsScreen navigate={navigate}/>:route==='integrations'?<IntegrationsScreen navigate={navigate}/>:route==='settings'?<SettingsScreen navigate={navigate}/>:<FutureScreen route={current.slug} navigate={navigate}/>}</main>
+ <main id="main-content" tabIndex={-1} aria-label={current.label} className="content" onClick={()=>{if(searchOpen)setSearchOpen(false)}}>{route==='dashboard'?<Dashboard navigate={navigate}/>:['net-worth','capital','portfolio','income','liabilities'].includes(route)?<Phase2Screen route={route as 'net-worth'|'capital'|'portfolio'|'income'|'liabilities'}/>:route==='goals'?<GoalsScreen navigate={navigate}/>:route==='strategies'?<StrategiesScreen navigate={navigate}/>:route==='independence'?<IndependenceScreen navigate={navigate}/>:route==='performance'?<PerformanceScreen navigate={navigate}/>:route==='risk'?<RiskScreen navigate={navigate}/>:route==='opportunities'?<OpportunitiesScreen navigate={navigate}/>:route==='forecasts'?<ForecastScreen navigate={navigate}/>:route==='scenarios'?<ScenarioScreen navigate={navigate}/>:route==='advisor'?<AdvisorScreen navigate={navigate}/>:route==='decisions'?<DecisionsScreen navigate={navigate}/>:route==='governance'?<GovernanceScreen navigate={navigate}/>:route==='security'?<SecurityScreen navigate={navigate}/>:route==='reports'?<ReportsScreen navigate={navigate}/>:route==='integrations'?<IntegrationsScreen navigate={navigate}/>:route==='settings'?<SettingsScreen navigate={navigate}/>:route==='connected'?<ConnectedWorkspace/>:<FutureScreen route={current.slug} navigate={navigate}/>}</main>
  </div>
  {notice&&<div className="wos-toast" role="status"><Check size={16}/>{notice}<button className="wos-toast-close" aria-label="Dismiss notice" type="button" onClick={()=>notify('')}><X size={15}/></button></div>}
  </div>
