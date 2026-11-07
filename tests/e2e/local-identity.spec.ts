@@ -46,7 +46,7 @@ test('full local PKCE browser login and PostgreSQL-backed goal',async({page})=>{
  await page.getByText('Create an authenticated goal').waitFor();
  // Scope the fields to the form creating an authenticated goal.
  const heading=page.getByText('Create an authenticated goal');
- const card=heading.locator('xpath=ancestor::*[contains(@class,"wos-card")][1]');
+ const card=page.locator('section.wos-card').filter({has:heading});
  await card.locator('input[maxlength="160"]').fill(title);
  await card.getByRole('button',{name:/Create durable goal/}).click();
  await expect(page.getByText(title)).toBeVisible();
