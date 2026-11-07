@@ -19,6 +19,24 @@ describe('B0 configuration — fail closed',()=>{
   expect(()=>loadConfig({...valid,OIDC_JWKS_URL:'https://user:secret@id.example.test/key'})).toThrow();
  });
 });
+describe('L1 local issuer boundaries',()=>{
+ it('accepts loopback HTTP OIDC only in development, never in staging',()=>{
+  const conf={
+   WEALTH_APP_DATABASE_URL:'postgresql://wealth_app:test@127.0.0.1:5432/wealth_os_local',
+   OIDC_ISSUER:'http://127.0.0.1:8181/realms/wealth-os-local',
+   OIDC_JWKS_URL:'http://127.0.0.1:8181/realms/wealth-os-local/protocol/openid-connect/certs',
+   OIDC_AUDIENCE:'wealth-os-api'
+  };
+  expect(loadConfig(conf).RUNTIME_MODE).toBe('development');
+  expect(()=>loadConfig({...conf,RUNTIME_MODE:'staging',
+   OIDC_REQUIRED_ACR:'urn:test:mfa',OIDC_REQUIRE_VERIFIED_EMAIL:'true',
+   WEALTH_INGEST_DATABASE_URL:'postgres://ingest:example@localhost:5432/wealth_os_local',
+   INTEGRATION_OIDC_ISSUER:'https://service.example.test/',
+   INTEGRATION_OIDC_JWKS_URL:'https://service.example.test/jwks',
+   INTEGRATION_OIDC_AUDIENCE:'wealth-os-source-ingest'})).toThrow('HTTPS');
+  expect(()=>loadConfig({...conf,OIDC_ISSUER:'http://public.example.test/realm'})).toThrow();
+ });
+});
 describe('B0 REST contracts',()=>{
  it('accepts only money decimal strings with correct scale',()=>{
   const body={title:'KES wealth target',metric:'NET_WORTH',targetAmount:'2500000.1250',targetDate:'2031-12-31'};

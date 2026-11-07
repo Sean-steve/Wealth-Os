@@ -1,0 +1,83 @@
+name: Wealth OS L1 — Native Ubuntu PostgreSQL & Local OIDC Certification
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/local/**'
+      - 'deploy/local/**'
+      - 'apps/api/**'
+      - 'src/connected/**'
+      - 'tests/e2e/local-identity.spec.ts'
+      - '.github/workflows/wealth-local.yml'
+      - 'package.json'
+      - 'vite.config.ts'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-postgres-keycloak:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      CI: 'true'
+      WEALTH_L1_E2E: 'yes'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install frontend and backend dependencies
+        run: |
+          npm install --no-audit --no-fund
+          npm install --prefix apps/api --no-audit --no-fund
+      - name: Install and start native PostgreSQL (not a DB container)
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-16 postgresql-client-16
+          sudo systemctl start postgresql
+          sudo -u postgres psql -Atqc 'SHOW server_version;'
+          sudo -u postgres psql -Atqc 'SHOW port;'
+      - name: Certify local bootstrap script safety (no secrets committed)
+        run: |
+          python3 -m unittest discover -s scripts/local -p 'test_*.py' -v
+          python3 scripts/local/setup.py --pg-port 5432 --oidc-port 8181
+          npm run local:migrate --prefix apps/api
+          npm run local:migrate --prefix apps/api
+          python3 scripts/local/provision_identity.py
+          python3 scripts/local/provision_identity.py
+      - name: Start local Keycloak ONLY (Ubuntu PostgreSQL remains native)
+        run: npm run local:identity:up
+      - name: Verify genuine locally signed OIDC issuer
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 75); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8181/realms/wealth-os-local/.well-known/openid-configuration >/dev/null; then
+              echo 'Local Keycloak OAuth/PKCE issuer ready'; exit 0
+            fi
+            sleep 2
+          done
+          docker compose -f deploy/local/identity.compose.yaml logs --tail=60
+          exit 1
+      - name: Launch local API on port 3009
+        run: |
+          npm run local:api --prefix apps/api > /tmp/wealth-l1-api.log 2>&1 &
+          echo $! > /tmp/wealth-l1-api.pid
+          for attempt in $(seq 1 35); do
+            if curl -fsS --max-time 2 http://127.0.0.1:3009/ready >/dev/null; then
+              echo 'Native PostgreSQL-backed Wealth OS API ready'; exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/wealth-l1-api.log | tail -60
+          exit 1
+      - name: Actual test-only JWT, HTTP, tenancy and PostgreSQL workflow certification
+        run: |
+          npm run local:certify --prefix apps/api
+          npm run local:test --prefix apps/api
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Browser PKCE login and real local PostgreSQL write certification
+        run: npx playwright test tests/e2e/local-identity.spec.ts
+      - name: Stop only Wealth OS identity container
+        if: always()
+        run: npm run local:identity:down || true

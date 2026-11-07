@@ -49,6 +49,16 @@ jobs:
         run: npm run typecheck --prefix apps/api
       - name: Unit and cross-tenant PostgreSQL contract tests
         run: npm run test:all --prefix apps/api
+      - name: L1 existing-PostgreSQL bootstrap safety tests (no Docker DB)
+        run: |
+          python3 -m unittest discover -s scripts/local -p 'test_*.py' -v
+          python3 -m py_compile scripts/local/setup.py scripts/local/provision_identity.py
+      - name: L1 identity-only Compose syntax
+        run: |
+          mkdir -p .local/wealth-os/keycloak
+          printf 'KC_BOOTSTRAP_ADMIN_USERNAME=ci\\nKC_BOOTSTRAP_ADMIN_PASSWORD=ci-only-placeholder\\n' > .local/wealth-os/keycloak/admin.env
+          printf '{}\\n' > .local/wealth-os/keycloak/realm.json
+          WEALTH_LOCAL_OIDC_PORT=8181 docker compose -f deploy/local/identity.compose.yaml config --quiet
       - name: Host script static-syntax checks
         run: |
           bash -n deploy/staging/deploy.sh

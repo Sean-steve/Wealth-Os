@@ -19,7 +19,11 @@
     "build": "tsc -p tsconfig.build.json",
     "staging:preflight": "tsx scripts/stagingPreflight.ts",
     "provider:certify": "tsx test/keycloak.provider.ts",
-    "staging:activation:prove": "tsx scripts/liveActivation.ts"
+    "staging:activation:prove": "tsx scripts/liveActivation.ts",
+    "local:migrate": "node --env-file=.env --import tsx scripts/migrate.ts",
+    "local:api": "node --env-file=.env --import tsx src/server.ts",
+    "local:test": "node --env-file=.env ./node_modules/vitest/vitest.mjs run --config vitest.config.ts",
+    "local:certify": "node --env-file=.env --import tsx scripts/localCertification.ts"
   },
   "dependencies": {
     "fastify": "^5.6.1",

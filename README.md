@@ -56,3 +56,20 @@ B3 adds staging-only infrastructure, a protected manual deployment pipeline, HTT
 ## Phase B3.1 — Protected Staging Provisioning and Real Provider Activation Proof
 
 Added a non-destructive dedicated-host bootstrap, protected main-SHA release gates, and an operator-only, signed-JWT multi-provider test-tenant activation verifier. The verifier is strictly opt-in, rejects absent credentials, and requires real approved human+source signatures. **No staging server/provider account is created by code or by GitHub Pages**, and no actual financial feed is claimed active. See [B3.1 operator runbook](docs/PHASE_B3_1.md) and `apps/api/scripts/liveActivation.ts`.
+
+## Phase L1 — Local Ubuntu PostgreSQL Activation & Certification
+
+L1 adds a **native existing-PostgreSQL bootstrap** and a **loopback-only local Keycloak container** (identity only; no Docker PostgreSQL). Local development creates independent random DB roles and a generated isolated test tenant/password with no real financial source data. Local protected workflows are actually accessible using Keycloak-signed JWTs and PostgreSQL persistence; the API does not accept fake/unsigned bearer tokens. **Tests on a developer's actual Ubuntu installation require running these scripts on that machine; GitHub CI alone cannot certify a particular laptop.**
+
+```bash
+python3 scripts/local/setup.py --pg-port 5432  # use --pg-port 5433 if native PG uses 5433
+npm run local:migrate --prefix apps/api
+python3 scripts/local/provision_identity.py
+npm run local:identity:up
+npm run local:api --prefix apps/api          # separate terminal
+npm run dev                               # separate terminal
+npm run local:certify --prefix apps/api    # third terminal
+npm run local:test --prefix apps/api
+```
+
+**Read [Full L1 Ubuntu Runbook](docs/PHASE_L1.md) before starting.** Never use this test realm for actual financial data or production identity.

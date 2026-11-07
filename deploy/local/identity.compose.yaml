@@ -1,0 +1,21 @@
+# L1 local testing: ONLY Keycloak is containerized.
+# PostgreSQL is your EXISTING Ubuntu service and is never launched or altered by Docker.
+# Realm content and admin credentials are generated in gitignored .local/wealth-os/.
+services:
+  identity:
+    image: quay.io/keycloak/keycloak:26.8.1
+    container_name: wealth-os-local-keycloak
+    restart: unless-stopped
+    env_file:
+      - ../../.local/wealth-os/keycloak/admin.env
+    command:
+      - start-dev
+      - --import-realm
+      - --hostname=http://127.0.0.1:${WEALTH_LOCAL_OIDC_PORT:-8181}
+    ports:
+      - "127.0.0.1:${WEALTH_LOCAL_OIDC_PORT:-8181}:8080"
+    volumes:
+      - ../../.local/wealth-os/keycloak/realm.json:/opt/keycloak/data/import/wealth-os-local.json:ro
+      - wealth_os_keycloak_local:/opt/keycloak/data
+volumes:
+  wealth_os_keycloak_local:

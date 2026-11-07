@@ -21,3 +21,7 @@ No built-in fake JWT issuer. Protected API requires real OIDC trust configuratio
 API contracts: `contracts/openapi.yaml`, `contracts/events.schema.json`. Schema: `db/migrations/`.
 
 **Do not connect real financial accounts or enter secrets into the sample frontend.**
+
+## L1 — Existing Ubuntu PostgreSQL (not Docker DB)
+
+Run from the repository root: `python3 scripts/local/setup.py --pg-port 5432` (or actual PostgreSQL port); `npm run local:migrate --prefix apps/api`; `python3 scripts/local/provision_identity.py`. Start **only** Keycloak using `npm run local:identity:up`, then `npm run local:api --prefix apps/api`, and `npm run local:certify --prefix apps/api`. The local API uses Node 22 `--env-file=.env`. Run `npm run local:test --prefix apps/api` to load the PostgreSQL URLs and execute the integration suite rather than skipping it. See `../../docs/PHASE_L1.md`.

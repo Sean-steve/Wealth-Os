@@ -1,6 +1,13 @@
 import {z} from 'zod';
 
-const httpsUrl=z.string().url().refine(v=>v.startsWith('https://'), 'OIDC metadata must use HTTPS');
+const httpsUrl=z.string().url().refine(v=>{
+ try {
+  const u=new URL(v);
+  return !u.username&&!u.password&&!u.hash&&!u.search &&
+   (u.protocol==='https:'||u.protocol==='http:'&&
+   ['localhost','127.0.0.1'].includes(u.hostname));
+ }catch{return false}
+},'OIDC must be HTTPS or an explicitly local loopback HTTP URL');
 const configSchema=z.object({
  WEALTH_APP_DATABASE_URL:z.string().min(1),
  WEALTH_INGEST_DATABASE_URL:z.string().min(1).optional(),
@@ -25,6 +32,12 @@ export function loadConfig(env:NodeJS.ProcessEnv=process.env):ApiConfig {
   throw new Error('Wealth OS API is not configured: require DB URL and trusted HTTPS OIDC issuer, audience, JWKS URL.');
  }
  const config=result.data;
+ // Loopback HTTP is strictly local-development-only.
+ const identityUrls=[config.OIDC_ISSUER,config.OIDC_JWKS_URL,
+  config.INTEGRATION_OIDC_ISSUER,config.INTEGRATION_OIDC_JWKS_URL].filter(
+   (v):v is string=>typeof v==='string');
+ if(config.RUNTIME_MODE!=='development'&&identityUrls.some(v=>new URL(v).protocol!=='https:'))
+  throw new Error('Staging/production OIDC metadata MUST use HTTPS.');
  if(config.RUNTIME_MODE!=='development'){
   if(!config.OIDC_REQUIRED_ACR||config.OIDC_REQUIRE_VERIFIED_EMAIL!=='true')
    throw new Error('Staging/production must enforce verified email and a pinned provider-proven MFA ACR.');
