@@ -30,8 +30,10 @@ class L1Safety(unittest.TestCase):
         spa = clients["wealth-os-local-spa"]
         self.assertTrue(spa["publicClient"])
         self.assertEqual(spa["attributes"]["pkce.code.challenge.method"], "S256")
-        self.assertTrue(all(u.startswith("http://") and "5173" in u
+        self.assertTrue(all(u.startswith("http://127.0.0.1:") or
+                            u.startswith("http://localhost:")
                             for u in spa["redirectUris"]))
+        self.assertEqual(len(spa["redirectUris"]), 3)
         self.assertFalse(clients["wealth-os-local-source"]["publicClient"])
         self.assertTrue(clients["wealth-os-local-source"]["serviceAccountsEnabled"])
 
