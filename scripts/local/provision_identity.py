@@ -48,7 +48,7 @@ BEGIN;
 DO $$
 BEGIN
  IF NOT EXISTS (SELECT 1 FROM wealth_core.schema_migrations
-                 WHERE version='005_staging_readiness.sql') THEN
+                 WHERE version='006_local_oidc_dev_boundary.sql') THEN
   RAISE EXCEPTION 'Run all versioned Wealth OS migrations before provisioning.';
  END IF;
 END $$;

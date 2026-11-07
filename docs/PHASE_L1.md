@@ -32,7 +32,7 @@ npm run local:migrate --prefix apps/api
 python3 scripts/local/provision_identity.py
 ```
 
-The bootstrap creates one database `wealth_os_local`, an owner/migration role `wealth_os_local_migrator`, and limited `wealth_app` and `wealth_ingest` roles with random generated passwords. It does not alter any other databases, nor does it change your PostgreSQL default port, config or other roles. Because migrations use these app-role names, the script **refuses** to proceed if those roles or the target database already exist **and aren't owned by the L1 setup**. It will not take over another project's roles. Run again only if the L1 marker exists; no passwords are reset.
+The repository's sixth migration permits loopback HTTP OIDC **only** in the dedicated `wealth_os_local` database for explicitly marked `LOCAL_TEST_IDENTITY_NOT_KERNEL_VERIFIED` identities. All other databases retain strict HTTPS issuer bindings.\n\nThe bootstrap creates one database `wealth_os_local`, an owner/migration role `wealth_os_local_migrator`, and limited `wealth_app` and `wealth_ingest` roles with random generated passwords. It does not alter any other databases, nor does it change your PostgreSQL default port, config or other roles. Because migrations use these app-role names, the script **refuses** to proceed if those roles or the target database already exist **and aren't owned by the L1 setup**. It will not take over another project's roles. Run again only if the L1 marker exists; no passwords are reset.
 
 Generated files, all gitignored and mode 600:
 

@@ -130,7 +130,7 @@ export function createApp({pool,verifyBearer,allowedOrigins=[],sourceServices={}
  app.get('/health',async()=>({status:'ok',service:'wealth-os-api',stage:'B3'}));
  app.get('/ready',async(_request,reply)=>{
   try{
-   const migration=await pool.query("SELECT 1 FROM wealth_core.schema_migrations WHERE version='005_staging_readiness.sql'");
+   const migration=await pool.query("SELECT 1 FROM wealth_core.schema_migrations WHERE version='006_local_oidc_dev_boundary.sql'");
    if(!migration.rowCount)throw Error('Required source migration is missing.');
    return {status:'ready',database:'migrated',stage:'B3'};
   }
