@@ -45,7 +45,10 @@ export async function makeLoginUrl(config:ConnectionConfig,storage:Pick<Storage,
  url.searchParams.set('response_type','code');
  url.searchParams.set('client_id',config.clientId);
  url.searchParams.set('redirect_uri',config.redirectUri);
- url.searchParams.set('scope','openid profile wealth:read wealth:write');
+ // Profile is a default Keycloak client scope; requesting it explicitly
+ // triggers invalid_scope in the isolated imported local realm. Request only
+ // the precise API permissions (and OpenID identity) needed for this client.
+ url.searchParams.set('scope','openid wealth:read wealth:write');
  url.searchParams.set('state',state);
  url.searchParams.set('nonce',nonce);
  url.searchParams.set('code_challenge_method','S256');
