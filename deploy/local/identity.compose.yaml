@@ -8,12 +8,13 @@ services:
     user: "0:0"
     restart: "no"
     entrypoint: ["/bin/sh", "-ec"]
-    command: >-
-      mkdir -p /keycloak-data/import &&
-      cp /run/private-realm.json /keycloak-data/import/wealth-os-local.json &&
-      chown -R 1000:0 /keycloak-data &&
-      chmod 700 /keycloak-data &&
-      chmod 600 /keycloak-data/import/wealth-os-local.json
+    command:
+      - >-
+        mkdir -p /keycloak-data/import &&
+        cp /run/private-realm.json /keycloak-data/import/wealth-os-local.json &&
+        chown -R 1000:0 /keycloak-data &&
+        chmod 700 /keycloak-data &&
+        chmod 600 /keycloak-data/import/wealth-os-local.json
     volumes:
       - ../../.local/wealth-os/keycloak/realm.json:/run/private-realm.json:ro
       - wealth_os_local_keycloak_data:/keycloak-data
