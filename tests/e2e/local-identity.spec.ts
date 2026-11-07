@@ -16,12 +16,18 @@ test('full local PKCE browser login and PostgreSQL-backed goal',async({page})=>{
  await page.goto('/Wealth-Os/#connected');
  await expect(page.getByRole('heading',{name:'Connected Wealth Workspace'})).toBeVisible();
  await expect(page.getByText(/LOCAL DEVELOPMENT TEST IDENTITY/)).toBeVisible();
+ // Keycloak may complete an existing SSO session before Playwright observes its login URL.
+ // Wait for the actual login page OR authenticated SPA state instead of racing a transient URL.
  await page.getByRole('button',{name:/Sign in via OIDC/}).click();
- await page.waitForURL(/127\.0\.0\.1:8181\/realms\/wealth-os-local/);
- await page.locator('#username').fill(credentials.username);
- await page.locator('#password').fill(credentials.password);
- await page.locator('#kc-login').click();
- await expect(page.getByText('OIDC session active')).toBeVisible({timeout:30000});
+ const loginForm=page.locator('#username');
+ const authenticated=page.getByText('OIDC session active');
+ await expect(loginForm.or(authenticated).first()).toBeVisible({timeout:30000});
+ if(await loginForm.isVisible()){
+  await loginForm.fill(credentials.username);
+  await page.locator('#password').fill(credentials.password);
+  await page.locator('#kc-login').click();
+ }
+ await expect(authenticated).toBeVisible({timeout:30000});
  const input=page.getByPlaceholder('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
  await input.fill(state.tenantId);
  await page.getByRole('button',{name:/Load verified workspace/}).click();

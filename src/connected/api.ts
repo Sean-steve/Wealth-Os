@@ -85,7 +85,7 @@ export async function completeLogin(config:ConnectionConfig,params:URLSearchPara
 export function scrubAuthQuery():void{
  if(typeof window==='undefined')return;
  const url=new URL(window.location.href);
- for(const key of ['code','state','error','error_description','session_state'])url.searchParams.delete(key);
+ for(const key of ['code','state','error','error_description','session_state','iss'])url.searchParams.delete(key);
  window.history.replaceState(null,'',url.pathname+url.search+'#connected');
 }
 export async function apiRequest<T>(config:ConnectionConfig,session:Session,tenantId:string,path:string,options?:{method?:'GET'|'POST'|'PATCH'|'PUT';body?:unknown;version?:number|string;idempotencyKey?:string}):Promise<T>{
