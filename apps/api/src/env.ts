@@ -3,7 +3,7 @@ import {z} from 'zod';
 const httpsUrl=z.string().url().refine(v=>{
  try {
   const u=new URL(v);
-  return !u.username&&!u.password&&!u.hash&&!u.search &&
+  return !u.hash&&!u.search &&
    (u.protocol==='https:'||u.protocol==='http:'&&
    ['localhost','127.0.0.1'].includes(u.hostname));
  }catch{return false}
