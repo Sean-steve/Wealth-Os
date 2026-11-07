@@ -191,6 +191,8 @@ def main() -> int:
     # Namespaced folders are never mounted in external projects.
     create_pg(args.pg_port, passwords)
     (LOCAL / "keycloak").mkdir(parents=True, mode=0o700, exist_ok=False)
+    (LOCAL / "keycloak" / "data" / "import").mkdir(parents=True, mode=0o700, exist_ok=False)
+    (LOCAL / "keycloak" / "data").chmod(0o700)
     api = [
         "# WEALTH OS LOCAL TEST ONLY; never deploy this file.",
         "RUNTIME_MODE=development", "HOST=127.0.0.1", "PORT=3009",

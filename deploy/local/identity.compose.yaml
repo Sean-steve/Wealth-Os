@@ -6,6 +6,8 @@ services:
     image: quay.io/keycloak/keycloak:26.8.1
     container_name: wealth-os-local-keycloak
     restart: unless-stopped
+    # Match the host account so private mode-600 test realm/secret files stay private.
+    user: "${WEALTH_LOCAL_UID:?run scripts/local/keycloak.sh}:${WEALTH_LOCAL_GID:?run scripts/local/keycloak.sh}"
     env_file:
       - ../../.local/wealth-os/keycloak/admin.env
     command:
@@ -15,7 +17,5 @@ services:
     ports:
       - "127.0.0.1:${WEALTH_LOCAL_OIDC_PORT:-8181}:8080"
     volumes:
+      - ../../.local/wealth-os/keycloak/data:/opt/keycloak/data
       - ../../.local/wealth-os/keycloak/realm.json:/opt/keycloak/data/import/wealth-os-local.json:ro
-      - wealth_os_keycloak_local:/opt/keycloak/data
-volumes:
-  wealth_os_keycloak_local:

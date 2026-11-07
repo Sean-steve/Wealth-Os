@@ -58,7 +58,7 @@ jobs:
           mkdir -p .local/wealth-os/keycloak
           printf 'KC_BOOTSTRAP_ADMIN_USERNAME=ci\\nKC_BOOTSTRAP_ADMIN_PASSWORD=ci-only-placeholder\\n' > .local/wealth-os/keycloak/admin.env
           printf '{}\\n' > .local/wealth-os/keycloak/realm.json
-          WEALTH_LOCAL_OIDC_PORT=8181 docker compose -f deploy/local/identity.compose.yaml config --quiet
+          bash scripts/local/keycloak.sh config --quiet
       - name: Host script static-syntax checks
         run: |
           bash -n deploy/staging/deploy.sh
