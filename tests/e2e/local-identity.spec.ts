@@ -21,7 +21,14 @@ test('full local PKCE browser login and PostgreSQL-backed goal',async({page})=>{
  await page.getByRole('button',{name:/Sign in via OIDC/}).click();
  const loginForm=page.locator('#username');
  const authenticated=page.getByText('OIDC session active');
- await expect(loginForm.or(authenticated).first()).toBeVisible({timeout:30000});
+ try{
+  await expect(loginForm.or(authenticated).first()).toBeVisible({timeout:12000});
+ }catch{
+  const error=await page.getByRole('alert').allTextContents();
+  // Never expose code, state, JWT or the callback URL in a test report.
+  throw new Error('L1_OIDC_CALLBACK_BLOCKED: '+error.join(' | ').slice(0,250)+
+   ' (browser origin='+new URL(page.url()).origin+')');
+ }
  if(await loginForm.isVisible()){
   await loginForm.fill(credentials.username);
   await page.locator('#password').fill(credentials.password);
