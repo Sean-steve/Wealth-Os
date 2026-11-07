@@ -4,11 +4,10 @@ It does NOT create real Person Kernel identity, provider consents, or financial 
 """
 from __future__ import annotations
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
-from urllib.parse import urlsplit, unquote
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 STATE_PATH = ROOT / ".local" / "wealth-os" / "state.json"
@@ -65,15 +64,18 @@ VALUES ({tenant}::uuid,'http://127.0.0.1:{state["oidcPort"]}/realms/wealth-os-lo
 ON CONFLICT (tenant_id,issuer,subject_id) DO NOTHING;
 COMMIT;
 """
-    env = dict(os.environ)
-    env["PGPASSWORD"] = unquote(parsed.password)
-    args = ["psql", "-X", "-w", "-v", "ON_ERROR_STOP=1", "-q",
-            "-h", "127.0.0.1", "-p", str(parsed.port or 5432),
-            "-U", parsed.username, "-d", "wealth_os_local"]
-    result = subprocess.run(args, input=script, env=env, text=True, capture_output=True)
+    # FORCE RLS deliberately prevents the migrator role from authorizing tenants.
+    # Only a trusted local PostgreSQL administrator may enroll this throwaway test subject.
+    # No superuser URL/password is ever written to the app's .env file.
+    admin = ["sudo", "-u", "postgres", "psql", "-X", "-w", "-v", "ON_ERROR_STOP=1",
+             "-q", "-p", str(parsed.port or 5432), "-d", "wealth_os_local"]
+    subprocess.run(["sudo", "-v"], check=True)
+    result = subprocess.run(admin, input=script, text=True, capture_output=True)
     if result.returncode:
-        raise RuntimeError("Local tenant provisioning failed. Verify migrations and "
-                           "existing PostgreSQL permissions; no real identity was authorized.")
+        err = next((line.strip() for line in result.stderr.splitlines()
+                    if line.lstrip().startswith("ERROR:")), "PostgreSQL rejected the tenant write")
+        raise RuntimeError("Local test identity provisioning failed: " + err[:220]
+                           + ". No real identity was authorized.")
 
 
 def main() -> int:
