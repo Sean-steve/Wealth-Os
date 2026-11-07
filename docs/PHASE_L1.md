@@ -99,7 +99,7 @@ Enter the `tenantId` UUID from `state.json`. You can now create a real **locally
 # Signed local Keycloak JWTs, API, tenant isolation and durable write/read workflows:
 npm run local:certify --prefix apps/api
 
-# Complete backend units + real PostgreSQL integration suite (NOT skipped):
+# Safe local backend unit tests (do not require a fixture superuser):
 npm run local:test --prefix apps/api
 
 # Frontend build and functional tests:
@@ -116,7 +116,7 @@ WEALTH_L1_E2E=yes npx playwright test tests/e2e/local-identity.spec.ts
 
 The first command checks Keycloak-signed user/service JWTs, audience separation, active tenant binding, wrong-tenant rejection, API health/ready, real PostgreSQL profile/goals/milestone/strategy persistence, idempotence and withheld net worth for incomplete sources. It writes **test-only planning records** to the local development database, not to actual financial providers. Repeated runs add new explicitly marked test goals. Never run it against a real person's tenant or production API.
 
-The integration suite uses its own deterministic dependency-injected test subjects and real PostgreSQL, with additional CI-only fixture records; it never claims a real HumanKernelOS identity. The CI suite uses isolated ephemeral PostgreSQL too.
+**Separate integration evidence:** `npm run local:certify` exercises live PostgreSQL through the real authenticated API. `npm run local:test` executes unit tests without privileged database fixture writes. The full cross-tenant fixture suite is certified in the isolated GitHub backend CI service, which uses an ephemeral dedicated PostgreSQL database with a privileged test-only fixture loader. **Do not grant BYPASSRLS or change the postgres superuser password on your shared Ubuntu instance just to run the CI fixture suite.**
 
 ### 6. Finish and stop only Wealth OS services
 
@@ -146,6 +146,6 @@ The local realm is deliberately a development-only Keycloak issuer using loopbac
 | 403 `KERNEL_IDENTITY_UNBOUND` | Provision local test tenant after migrations and use exact tenant UUID from `state.json`. |
 | Connected Workspace says "not configured" | Confirm `.env.local` exists and restart Vite (build-time env vars are loaded at startup). |
 | 403 on a finance source | Expected without real subject-approved source consent and a bound service producer. |
-| 500 or backend tests skipped | Use `npm run local:test --prefix apps/api` and ensure the database migrator URL is loaded. |
+| 500 or backend tests skipped | Use `npm run local:certify --prefix apps/api` for real HTTP/DB checks; `local:test` runs safe unit tests only. Full privileged fixture tests run in isolated GitHub CI. |
 
 **Local completion gate:** real local PostgreSQL ready, browser signs into the local test Keycloak realm, user-bound Profile + Goal + Milestone + Strategy writes persist, source data remains null/untrusted, and test reports PASS. Production is still blocked on real identities, signed source publishers, staging and data-governance evidence.

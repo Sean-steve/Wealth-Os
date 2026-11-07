@@ -22,7 +22,7 @@
     "staging:activation:prove": "tsx scripts/liveActivation.ts",
     "local:migrate": "node --env-file=.env --import tsx scripts/migrate.ts",
     "local:api": "node --env-file=.env --import tsx src/server.ts",
-    "local:test": "node --env-file=.env ./node_modules/vitest/vitest.mjs run --config vitest.config.ts",
+    "local:test": "node --env-file=.env ./node_modules/vitest/vitest.mjs run --config vitest.config.ts src",
     "local:certify": "node --env-file=.env --import tsx scripts/localCertification.ts"
   },
   "dependencies": {

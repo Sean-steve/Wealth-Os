@@ -69,7 +69,7 @@ npm run local:identity:up
 npm run local:api --prefix apps/api          # separate terminal
 npm run dev                               # separate terminal
 npm run local:certify --prefix apps/api    # third terminal
-npm run local:test --prefix apps/api
+npm run local:test --prefix apps/api    # safe local unit tests, not privileged fixture tests
 ```
 
 **Read [Full L1 Ubuntu Runbook](docs/PHASE_L1.md) before starting.** Never use this test realm for actual financial data or production identity.
